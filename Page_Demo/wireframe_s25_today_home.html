@@ -1,0 +1,87 @@
+
+<h2 class="sr-only">Low-fidelity wireframe of S25 Today Home — reception landing page with arrivals, departures, walk-in, and availability by room number</h2>
+<style>
+.wf2 { font-family: var(--font-sans); background: var(--surface-0); border: 1px solid var(--border-strong); border-radius: 8px; overflow: hidden; }
+.wf2 * { box-sizing: border-box; }
+.w2-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; border-bottom: 1px dashed var(--border-strong); font-size: 11px; color: var(--text-secondary); }
+.w2-body { display: grid; grid-template-columns: 1.1fr 1.1fr 0.9fr; gap: 10px; padding: 12px; }
+.col-title { font-size: 10px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 6px; }
+.tli { border: 1px solid var(--border-strong); border-radius: 6px; padding: 7px 9px; margin-bottom: 6px; font-size: 10px; color: var(--text-secondary); display: flex; justify-content: space-between; align-items: center; }
+.tli b { color: var(--text-primary); font-size: 11px; display: block; }
+.tli .act { border: 1px solid var(--border-strong); border-radius: 4px; padding: 2px 8px; font-size: 9px; color: var(--text-primary); white-space: nowrap; }
+.tli.done { opacity: 0.5; }
+.walkin { border: 2px solid var(--text-primary); border-radius: 8px; padding: 12px; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; }
+.avail { border: 1px dashed var(--border-strong); border-radius: 6px; padding: 8px 9px; margin-bottom: 8px; }
+.avail .t { font-size: 10px; color: var(--text-muted); margin-bottom: 4px; }
+.avail .rooms { display: flex; gap: 4px; flex-wrap: wrap; }
+.avail .rm { border: 1px solid var(--border-strong); border-radius: 4px; padding: 3px 7px; font-size: 10px; color: var(--text-primary); background: var(--surface-0); }
+.avail .rm.dirty { background: repeating-linear-gradient(45deg, var(--surface-1), var(--surface-1) 3px, var(--border) 3px, var(--border) 6px); color: var(--text-muted); }
+.mini { border: 1px dashed var(--border-strong); border-radius: 6px; padding: 7px 9px; font-size: 9px; color: var(--text-muted); margin-bottom: 6px; }
+.mini b { color: var(--text-secondary); font-size: 10px; }
+</style>
+
+<p style="font-size:11px;color:var(--text-muted);margin:0 0 6px;">S25 · Today Home — reception's landing page (permission-dependent home) · same web app, sidebar minimized</p>
+
+<div class="wf2">
+  <div class="w2-head">
+    <span>☰ &nbsp; Amanew · <b style="color:var(--text-primary);">วันนี้ · ศ. 17 ก.ค. 69</b></span>
+    <span>🔔 3 &nbsp;·&nbsp; นก (reception)</span>
+  </div>
+  <div class="w2-body">
+
+    <div>
+      <p class="col-title">เข้าวันนี้ · Arrivals (3)</p>
+      <div class="tli">
+        <span><b>คุณสมชาย ใจดี</b>รายเดือน · จองห้องแอร์ · โอนแล้ว ฿1,000<br>📞 08x-xxx-1234 · จาก LINE</span>
+        <span class="act">เริ่มเข้าอยู่ →</span>
+      </div>
+      <div class="tli">
+        <span><b>คุณมาลี ส.</b>รายวัน · แอร์ 2 คืน · โทรจองไว้<br>📞 08x-xxx-5678</span>
+        <span class="act">เช็คอิน →</span>
+      </div>
+      <div class="tli" style="border-style:dashed;">
+        <span><b>คุณวิชัย พ.</b>รายวัน · ยังไม่มา (จอง 14:00)<br>📞 08x-xxx-9012</span>
+        <span class="act">โทร / ยกเลิก</span>
+      </div>
+
+      <p class="col-title" style="margin-top:10px;">ออกวันนี้ · Departures (2)</p>
+      <div class="tli">
+        <span><b>ห้อง 118 · คุณดำ</b>รายวัน · ครบ 2 คืน · เช็คเอาท์ก่อน 13:00</span>
+        <span class="act">เช็คเอาท์ →</span>
+      </div>
+      <div class="tli done">
+        <span><b>ห้อง 112 · คุณแดง</b>เช็คเอาท์แล้ว 10:15 · คืนมัดจำแล้ว</span>
+        <span>✓</span>
+      </div>
+    </div>
+
+    <div>
+      <div class="walkin">+ Walk-in เช็คอินเลย</div>
+      <p class="col-title">ห้องว่างวันนี้ (พร้อมขาย)</p>
+      <div class="avail">
+        <div class="t">ห้องแอร์ · ฿500/คืน — ว่าง 3</div>
+        <div class="rooms">
+          <span class="rm">205</span><span class="rm">307</span><span class="rm">314</span>
+          <span class="rm dirty">203 รอทำ</span>
+        </div>
+      </div>
+      <div class="avail">
+        <div class="t">ห้องพัดลม · ฿350/คืน — ว่าง 1</div>
+        <div class="rooms">
+          <span class="rm">105</span>
+          <span class="rm dirty">110 รอทำ</span>
+        </div>
+      </div>
+      <div class="mini"><b>รอทำความสะอาด 2 ห้อง</b><br>203 (กำลังทำ · แดง) · 110 (รอ)</div>
+    </div>
+
+    <div>
+      <p class="col-title">รอดำเนินการ</p>
+      <div class="tli"><span><b>สลิปรอตรวจ (4)</b>ล่าสุด: ห้อง 216 · ฿4,150</span><span class="act">ตรวจ →</span></div>
+      <div class="tli"><span><b>คำขอเชื่อมต่อ (1)</b>ห้อง 309 · คุณฝน</span><span class="act">อนุมัติ</span></div>
+      <div class="tli"><span><b>แจ้งย้ายออก (1)</b>ห้อง 214 · สิ้นเดือนนี้</span><span class="act">ดู</span></div>
+      <div class="mini"><b>เงินสดวันนี้</b><br>รับแล้ว ฿6,500 · 5 รายการ<br><span style="text-decoration:underline;">สรุปสิ้นวัน →</span></div>
+    </div>
+
+  </div>
+</div>

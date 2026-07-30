@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S08 · ย้ายเข้ารายเดือน — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S08" data-title="ย้ายเข้ารายเดือน">
+<div class="page-content" id="page-content">
+
+  <div class="wizard-stepper">
+    <div class="wiz-step done"><span class="wiz-num">✓</span> ค้นหาผู้เช่า</div>
+    <div class="wiz-connector"></div>
+    <div class="wiz-step current"><span class="wiz-num">2</span> ย้ายเข้ารายเดือน</div>
+  </div>
+
+  <div class="card" style="max-width:520px;">
+    <h3>ยืนยันการเช่าห้อง <span id="room-label"></span></h3>
+    <div class="tenant-chip monthly" style="margin-bottom:14px;"><span class="tc-name" id="t-name"></span><span class="tc-phone" id="t-phone"></span></div>
+    <form id="tenancy-form" class="form-grid">
+      <div class="field">
+        <label>วันที่เริ่มเช่า <span class="req">*</span></label>
+        <input type="date" id="start-date" required>
+      </div>
+      <div class="field">
+        <label>เงินประกัน (บาท) <span class="req">*</span></label>
+        <input type="number" id="deposit" min="0" step="100" required>
+      </div>
+      <div class="field full" style="flex-direction:row; gap:10px; margin-top:6px;">
+        <button type="submit" class="btn btn-primary" data-primary>ยืนยันเช็คอิน</button>
+        <a class="btn btn-secondary" href="s02-dashboard.html" id="cancel-link">ยกเลิก</a>
+      </div>
+    </form>
+    <div class="demo-note" style="margin-top:12px;">โหมดสาธิต: กด Shift ค้างไว้ตอนกด "ยืนยันเช็คอิน" เพื่อดูสถานการณ์ห้องถูกจองแล้ว (S09)</div>
+  </div>
+
+</div>
+
+<!-- S09 — Room-taken conflict dialog (single-exit) -->
+<div class="dialog-overlay" id="conflict-dialog" aria-hidden="true">
+  <div class="dialog-box">
+    <span class="screen-id">S09 · ห้องถูกจองแล้ว</span>
+    <div class="dialog-reason">เช็คอินไม่สำเร็จ</div>
+    <div class="dialog-what">ห้อง <span id="conflict-room"></span> เพิ่งถูกเช็คอินโดยพนักงานอีกคนเมื่อครู่นี้</div>
+    <div class="dialog-next">กรุณาเลือกห้องอื่นจากผังห้อง</div>
+    <div class="dialog-actions">
+      <a class="btn btn-primary" href="s02-dashboard.html" id="back-to-dash">กลับไปผังห้อง</a>
+    </div>
+  </div>
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var qsAmp = qs.replace(/^\?/, '&');
+  var params = new URLSearchParams(qs);
+  var room = params.get('room') || '102';
+  var name = params.get('name') || '';
+  var phone = params.get('phone') || '';
+  var r = D.room(room);
+
+  document.getElementById('room-label').textContent = room;
+  document.getElementById('t-name').textContent = name;
+  document.getElementById('t-phone').textContent = phone;
+  document.getElementById('conflict-room').textContent = room;
+  document.getElementById('cancel-link').href = 's04-room-detail.html?room=' + room + qsAmp;
+
+  var today = new Date().toISOString().slice(0, 10);
+  document.getElementById('start-date').value = today;
+  document.getElementById('deposit').value = (r ? r.defaultRent : 3500) * 2;
+
+  var shiftHeld = false;
+  var form = document.getElementById('tenancy-form');
+  form.querySelector('[data-primary]').addEventListener('click', function (e) { shiftHeld = e.shiftKey; }, true);
+  Demo.guardUnsaved(form);
+
+  Demo.submitWithSpinner(form, function (e, restore) {
+    if (shiftHeld) {
+      restore();
+      Demo.openDialog('conflict-dialog', form.querySelector('[data-primary]'));
+      return;
+    }
+    location.href = 's02-dashboard.html?banner=' + encodeURIComponent('เช็คอินผู้เช่า ' + name + ' ห้อง ' + room + ' สำเร็จ') + qsAmp;
+  }, 700);
+</script>
+</body>
+</html>

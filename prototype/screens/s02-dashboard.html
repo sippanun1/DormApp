@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S02 · แดชบอร์ด — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S02" data-title="แดชบอร์ด">
+<div class="page-content" id="page-content">
+
+  <div class="card">
+    <h3>ภาพรวมสถานะห้อง</h3>
+    <div class="kpi-row" id="kpi-row"></div>
+  </div>
+
+  <div class="card">
+    <h3>ทางลัด</h3>
+    <div class="grid-4" style="display:grid; grid-template-columns:repeat(4,1fr); gap:var(--gap);">
+      <a class="btn btn-monthly" href="s05-tenant-lookup.html?flow=monthly">+ เช็คอินรายเดือน</a>
+      <a class="btn btn-daily" href="s05-tenant-lookup.html?flow=daily">+ จองห้องรายวัน</a>
+      <a class="btn btn-secondary" href="s13-meter-reading.html?room=105&tenancy=T-1005">จดมิเตอร์</a>
+      <a class="btn btn-secondary" href="s18-invoice-list.html">ดูใบแจ้งหนี้</a>
+    </div>
+  </div>
+
+  <div class="card" style="gap:14px; display:flex; flex-direction:column;">
+    <div class="page-header-row">
+      <h3 style="margin:0;">ผังห้อง</h3>
+      <div class="spacer"></div>
+      <div class="legend">
+        <span class="legend-item"><span class="swatch" style="background:var(--success-soft); border:1px solid var(--success);"></span> ว่าง</span>
+        <span class="legend-item"><span class="swatch" style="background:var(--info-soft); border:1px solid var(--info);"></span> มีผู้เช่า</span>
+        <span class="legend-item"><span class="swatch" style="background:var(--warning-soft); border:1px dotted var(--warning);"></span> จองแล้ว</span>
+      </div>
+    </div>
+    <div class="tab-bar" id="room-tabs">
+      <button data-tab="all" class="active">ทั้งหมด</button>
+      <button data-tab="monthly">รายเดือน</button>
+      <button data-tab="daily">รายวัน</button>
+    </div>
+    <div id="room-grid-wrap"></div>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+
+  // Room Status Overview
+  var vacantCount = D.rooms.filter(function (r) { return r.state === 'vacant'; }).length;
+  var monthlyCount = D.rooms.filter(function (r) { return r.rentalType === 'monthly' && r.state === 'occupied'; }).length;
+  var dailyCount = D.rooms.filter(function (r) { return r.rentalType === 'daily' && r.state === 'occupied'; }).length;
+  var reservedCount = D.rooms.filter(function (r) { return r.state === 'reserved'; }).length;
+  document.getElementById('kpi-row').innerHTML =
+    '<div class="kpi-tile kpi-success"><div class="kpi-num">' + vacantCount + '</div><div class="kpi-label">ห้องว่าง</div></div>' +
+    '<div class="kpi-tile kpi-primary"><div class="kpi-num">' + monthlyCount + '</div><div class="kpi-label">รายเดือน (มีผู้เช่า)</div></div>' +
+    '<div class="kpi-tile kpi-primary"><div class="kpi-num">' + dailyCount + '</div><div class="kpi-label">รายวัน (มีผู้เข้าพัก)</div></div>' +
+    '<div class="kpi-tile kpi-warning"><div class="kpi-num">' + reservedCount + '</div><div class="kpi-label">จองแล้ว (รอเข้าพัก)</div></div>';
+
+  // Room grid, grouped by floor, all 60 rooms visible
+  function stateClass(r) {
+    if (r.state === 'vacant') return 'state-vacant-clean';
+    if (r.state === 'reserved') return 'state-cleaning';
+    return 'state-occupied';
+  }
+  function subLabel(r) {
+    if (r.state === 'vacant') return r.rentalType === 'monthly' ? 'รายเดือน' : 'รายวัน';
+    if (r.state === 'reserved') return 'จองแล้ว';
+    return r.rentalType === 'monthly' ? 'รายเดือน' : 'รายวัน';
+  }
+
+  var floors = [1, 2, 3, 4];
+  var gridHtml = floors.map(function (f) {
+    var roomsOnFloor = D.rooms.filter(function (r) { return r.floor === f; });
+    var cards = roomsOnFloor.map(function (r) {
+      return '<a class="room-card grid-compact ' + stateClass(r) + '" data-rental="' + r.rentalType + '" ' +
+        'href="s04-room-detail.html?room=' + r.number + qs.replace(/^\?/, '&') + '" title="ห้อง ' + r.number + '">' +
+        r.number + '<span class="room-sub">' + subLabel(r) + '</span></a>';
+    }).join('');
+    return '<div class="floor-label">ชั้น ' + f + '</div><div class="room-mini-grid">' + cards + '</div>';
+  }).join('');
+  document.getElementById('room-grid-wrap').innerHTML = gridHtml;
+
+  Demo.bindTabs(document.getElementById('room-tabs'), function (tab) {
+    document.querySelectorAll('.room-card').forEach(function (card) {
+      var show = tab === 'all' || card.dataset.rental === tab;
+      card.style.display = show ? '' : 'none';
+    });
+  });
+</script>
+</body>
+</html>

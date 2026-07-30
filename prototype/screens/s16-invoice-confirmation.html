@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S16 · ยืนยันบิล — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S16" data-title="ยืนยันบิล">
+<div class="page-content" id="page-content">
+
+  <div class="card" style="max-width:480px;">
+    <div class="invoice-card">
+      <div class="ic-head"><h3>ห้อง <span id="room-label"></span> — งวด <span id="period-label"></span></h3></div>
+      <div class="ic-line"><span class="ic-desc">ค่าเช่าห้อง</span><span class="ic-amt" id="room-charge"></span></div>
+      <div class="ic-line">
+        <span class="ic-desc">ค่าไฟฟ้า<span class="ic-calc" id="e-calc"></span></span>
+        <span class="ic-amt" id="e-cost"></span>
+      </div>
+      <div class="ic-line">
+        <span class="ic-desc">ค่าน้ำ<span class="ic-calc" id="w-calc"></span></span>
+        <span class="ic-amt" id="w-cost"></span>
+      </div>
+      <div class="ic-line"><span class="ic-desc">รวมค่าน้ำ-ไฟ</span><span class="ic-amt" id="utility-subtotal"></span></div>
+      <div class="ic-total"><span>รวมทั้งสิ้น</span><span id="total"></span></div>
+    </div>
+
+    <div id="action-slot" style="margin-top:16px; display:flex; gap:10px;">
+      <button type="button" class="btn btn-primary" id="btn-generate" data-primary>ออกใบแจ้งหนี้</button>
+      <a class="btn btn-secondary" href="s18-invoice-list.html" id="cancel-link">ยกเลิก</a>
+    </div>
+    <div id="result-slot"></div>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var qsAmp = qs.replace(/^\?/, '&');
+  var inv = D.invoice;
+
+  document.getElementById('room-label').textContent = inv.room;
+  document.getElementById('period-label').textContent = inv.billingPeriod;
+  document.getElementById('room-charge').textContent = D.money(inv.roomCharge);
+  document.getElementById('e-calc').textContent = ' (' + inv.electric.units + ' หน่วย × ' + D.money(inv.electric.rate) + ')';
+  document.getElementById('e-cost').textContent = D.money(inv.electric.cost);
+  document.getElementById('w-calc').textContent = ' (' + inv.water.units + ' หน่วย × ' + D.money(inv.water.rate) + ')';
+  document.getElementById('w-cost').textContent = D.money(inv.water.cost);
+  document.getElementById('utility-subtotal').textContent = D.money(inv.utilitySubtotal);
+  document.getElementById('total').textContent = D.money(inv.total);
+
+  document.getElementById('btn-generate').addEventListener('click', function (e) {
+    var btn = e.currentTarget;
+    btn.disabled = true;
+    var original = btn.innerHTML;
+    btn.innerHTML = '<span class="spinner"></span> กำลังออกใบแจ้งหนี้…';
+    setTimeout(function () {
+      document.getElementById('action-slot').style.display = 'none';
+      document.getElementById('result-slot').innerHTML =
+        '<div class="success-banner">✓ ออกใบแจ้งหนี้เลขที่ ' + inv.number + ' เรียบร้อยแล้ว</div>' +
+        '<a class="btn btn-primary" style="margin-top:10px;" href="s19-invoice-detail.html?invoice=' + inv.number + qsAmp + '">ดูใบแจ้งหนี้</a>';
+    }, 700);
+  });
+</script>
+</body>
+</html>

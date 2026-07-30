@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Amanew — Screen Menu (demo access)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+<style>
+  .menu-wrap { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; display: flex; flex-direction: column; gap: 22px; }
+  .menu-head h1 { font-size: 26px; }
+  .menu-head p { color: var(--text-muted); margin-top: 6px; }
+  .menu-group h2 { font-size: 15px; margin-bottom: 10px; color: var(--text-muted); }
+  .menu-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .menu-link {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--card-bg); border: var(--card-border); box-shadow: var(--card-shadow);
+    border-radius: var(--radius); padding: 13px 16px; color: var(--text);
+  }
+  .menu-link:hover { outline: 2px solid var(--primary); }
+  .menu-link .ml-id { font-size: 11px; font-weight: 700; color: var(--text-muted); min-width: 34px; }
+  .menu-link .ml-name { font-weight: 600; flex: 1; }
+</style>
+</head>
+<body data-style="a">
+
+<div class="menu-wrap">
+  <div class="menu-head">
+    <a href="index.html" style="font-size:13px; color:var(--text-muted);">← กลับไปหน้าเข้าสู่ระบบ</a>
+  </div>
+
+  <div class="menu-group">
+    <h2>เข้าสู่ระบบ</h2>
+    <div class="menu-list">
+      <a class="menu-link" href="screens/s01-login.html"><span class="ml-id">S01</span><span class="ml-name">เข้าสู่ระบบ</span><span class="status-badge sm badge-success">พร้อมดู</span></a>
+    </div>
+  </div>
+
+  <div class="menu-group">
+    <h2>แดชบอร์ดและห้องพัก</h2>
+    <div class="menu-list">
+      <a class="menu-link" href="screens/s02-dashboard.html"><span class="ml-id">S02</span><span class="ml-name">แดชบอร์ด (ผังห้อง 60 ห้อง)</span><span class="status-badge sm badge-success">พร้อมดู</span></a>
+      <a class="menu-link" href="screens/s04-room-detail.html?room=105"><span class="ml-id">S04</span><span class="ml-name">รายละเอียดห้อง (มีผู้เช่ารายเดือน)</span><span class="status-badge sm badge-success">พร้อมดู</span></a>
+      <a class="menu-link" href="screens/s04-room-detail.html?room=102"><span class="ml-id">S04</span><span class="ml-name">รายละเอียดห้อง (ว่าง รายเดือน)</span><span class="status-badge sm badge-success">พร้อมดู</span></a>
+      <a class="menu-link" href="screens/s04-room-detail.html?room=108"><span class="ml-id">S04</span><span class="ml-name">รายละเอียดห้อง (จองแล้ว)</span><span class="status-badge sm badge-success">พร้อมดู</span></a>
+    </div>
+  </div>
+
+  <div class="menu-group">
+    <h2>เช็คอินรายเดือน / จองรายวัน</h2>
+    <div class="menu-list">
+      <a class="menu-link" href="screens/s05-tenant-lookup.html?flow=monthly&room=102"><span class="ml-id">S05/S06</span><span class="ml-name">ค้นหาผู้เช่า + ยืนยันข้อมูล</span><span class="status-badge sm badge-success">พร้อมดู</span></a>
+      <a class="menu-link" href="screens/s07-new-tenant.html?flow=monthly&room=102&phone=099-999-9999"><span class="ml-id">S07</span><span class="ml-name">ลงทะเบียนผู้เช่าใหม่</span><span class="status-badge sm badge-success">พร้อมดู</span></a>
+      <a class="menu-link" href="screens/s08-monthly-tenancy.html?room=102&name=คุณสมชาย ใจดี&phone=081-234-5678"><span class="ml-id">S08/S09</span><span class="ml-name">ย้ายเข้ารายเดือน (+ ห้องถูกจองแล้ว)</span><span class="status-badge sm badge-success">พร้อมดู</span></a>
+      <a class="menu-link" href="screens/s10-daily-booking.html?room=103&name=คุณนก สุวรรณ&phone=062-345-6789"><span class="ml-id">S10/S11</span><span class="ml-name">จองห้องรายวัน (+ วันที่ซ้อนกัน)</span><span class="status-badge sm badge-success">พร้อมดู</span></a>
+      <a class="menu-link" href="screens/s12-guest-registration.html?room=103&name=คุณนก สุวรรณ&phone=062-345-6789"><span class="ml-id">S12</span><span class="ml-name">ทะเบียนผู้เข้าพัก (กฎหมายกำหนด)</span><span class="status-badge sm badge-success">พร้อมดู</span></a>
+    </div>
+  </div>
+
+  <div class="menu-group">
+    <h2>มิเตอร์และบิล</h2>
+    <div class="menu-list">
+      <a class="menu-link" href="screens/s13-meter-reading.html?room=105&tenancy=T-1005"><span class="ml-id">S13</span><span class="ml-name">จดมิเตอร์ (ไฟ+น้ำ)</span><span class="status-badge sm badge-success">พร้อมดู</span></a>
+      <a class="menu-link" href="screens/s16-invoice-confirmation.html"><span class="ml-id">S16</span><span class="ml-name">ยืนยันบิล</span><span class="status-badge sm badge-success">พร้อมดู</span></a>
+      <a class="menu-link" href="screens/s17-batch-summary.html"><span class="ml-id">S17</span><span class="ml-name">สรุปสร้างบิลทั้งหมด</span><span class="status-badge sm badge-success">พร้อมดู</span></a>
+      <a class="menu-link" href="screens/s18-invoice-list.html"><span class="ml-id">S18</span><span class="ml-name">รายการบิล</span><span class="status-badge sm badge-success">พร้อมดู</span></a>
+      <a class="menu-link" href="screens/s19-invoice-detail.html?invoice=1042"><span class="ml-id">S19</span><span class="ml-name">รายละเอียดบิล (ค้างชำระ)</span><span class="status-badge sm badge-success">พร้อมดู</span></a>
+      <a class="menu-link" href="screens/s20-payment-submission.html?invoice=1042"><span class="ml-id">S20</span><span class="ml-name">บันทึกการชำระเงิน</span><span class="status-badge sm badge-success">พร้อมดู</span></a>
+    </div>
+  </div>
+
+  <div class="menu-group">
+    <h2>ตรวจสอบสลิป (Admin)</h2>
+    <div class="menu-list">
+      <a class="menu-link" href="screens/s21-verification-queue.html?role=admin"><span class="ml-id">S21</span><span class="ml-name">คิวรอตรวจสอบ</span><span class="status-badge sm badge-success">พร้อมดู</span></a>
+      <a class="menu-link" href="screens/s22-verification-detail.html?invoice=1041&role=admin"><span class="ml-id">S22/S23</span><span class="ml-name">ตรวจสอบสลิป (+ ปฏิเสธ)</span><span class="status-badge sm badge-success">พร้อมดู</span></a>
+    </div>
+  </div>
+
+  <div class="menu-group">
+    <h2>ตั้งค่าห้อง (Admin)</h2>
+    <div class="menu-list">
+      <a class="menu-link" href="screens/s24-room-settings.html?role=admin"><span class="ml-id">S24/S25</span><span class="ml-name">เปลี่ยนประเภทห้อง (+ ถูกปฏิเสธ)</span><span class="status-badge sm badge-success">พร้อมดู</span></a>
+    </div>
+  </div>
+</div>
+
+<script src="switcher.js"></script>
+</body>
+</html>

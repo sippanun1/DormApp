@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S24 · ตั้งค่าห้อง — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S24" data-title="ตั้งค่าห้อง">
+<div class="page-content" id="page-content">
+
+  <div data-admin-only>
+    <div class="card" style="max-width:480px;">
+      <h3>เปลี่ยนประเภทห้อง</h3>
+      <form id="room-type-form" class="form-grid">
+        <div class="field full">
+          <label>เลือกห้อง <span class="req">*</span></label>
+          <select id="room-select"></select>
+        </div>
+        <div class="field full">
+          <label>ประเภทปัจจุบัน</label>
+          <input type="text" id="current-type" disabled>
+        </div>
+        <div class="field full">
+          <label>ประเภทใหม่ <span class="req">*</span></label>
+          <select id="new-type">
+            <option value="monthly">รายเดือน</option>
+            <option value="daily">รายวัน</option>
+          </select>
+        </div>
+        <div class="field full" style="flex-direction:row; gap:10px; margin-top:6px;">
+          <button type="submit" class="btn btn-primary" data-primary>บันทึกการเปลี่ยนแปลง</button>
+        </div>
+        <div class="field full muted" style="font-size:12px;">ทุกการเปลี่ยนแปลงจะถูกบันทึกไว้ในประวัติ — จะถูกปฏิเสธหากห้องมีผู้เช่าอยู่หรือมีการจองล่วงหน้า</div>
+      </form>
+      <div class="demo-note" style="margin-top:12px;">โหมดสาธิต: กด Shift ค้างไว้ตอนกด "บันทึกการเปลี่ยนแปลง" เพื่อดูสถานการณ์ถูกปฏิเสธ (S25)</div>
+    </div>
+  </div>
+
+  <div class="card" id="no-access-card" style="display:none;">
+    <p>หน้านี้สำหรับผู้ดูแลระบบ (Admin) เท่านั้น</p>
+  </div>
+
+</div>
+
+<!-- S25 — Room type change conflict dialog (single-exit) -->
+<div class="dialog-overlay" id="conflict-dialog" aria-hidden="true">
+  <div class="dialog-box">
+    <span class="screen-id">S25 · ไม่สามารถเปลี่ยนประเภทห้องได้</span>
+    <div class="dialog-reason">เปลี่ยนประเภทห้องไม่สำเร็จ</div>
+    <div class="dialog-what">ห้อง <span id="conflict-room"></span> มีผู้เช่าอยู่ในปัจจุบัน (สัญญายังไม่สิ้นสุด)</div>
+    <div class="dialog-next">รอให้สัญญาเช่าสิ้นสุดก่อน จึงจะเปลี่ยนประเภทห้องนี้ได้</div>
+    <div class="dialog-actions">
+      <button type="button" class="btn btn-primary" id="ack-btn">รับทราบ</button>
+    </div>
+  </div>
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+
+  var TYPE_LABEL = { monthly: 'รายเดือน', daily: 'รายวัน' };
+  document.getElementById('room-select').innerHTML = D.rooms.map(function (r) {
+    return '<option value="' + r.number + '">ห้อง ' + r.number + ' (' + TYPE_LABEL[r.rentalType] + ')</option>';
+  }).join('');
+
+  function refreshCurrentType() {
+    var r = D.room(document.getElementById('room-select').value);
+    document.getElementById('current-type').value = TYPE_LABEL[r.rentalType];
+  }
+  document.getElementById('room-select').value = '105';
+  refreshCurrentType();
+  document.getElementById('room-select').addEventListener('change', refreshCurrentType);
+
+  var shiftHeld = false;
+  var form = document.getElementById('room-type-form');
+  form.querySelector('[data-primary]').addEventListener('click', function (e) { shiftHeld = e.shiftKey; }, true);
+
+  Demo.submitWithSpinner(form, function (e, restore) {
+    var roomNo = document.getElementById('room-select').value;
+    if (shiftHeld) {
+      restore();
+      document.getElementById('conflict-room').textContent = roomNo;
+      Demo.openDialog('conflict-dialog', form.querySelector('[data-primary]'));
+      return;
+    }
+    location.href = 's24-room-settings.html?banner=' + encodeURIComponent('เปลี่ยนประเภทห้อง ' + roomNo + ' แล้ว') + qs.replace(/^\?/, '&');
+  }, 700);
+
+  document.getElementById('ack-btn').addEventListener('click', function () { Demo.closeDialog('conflict-dialog'); });
+
+  if (window.AmanewRole && window.AmanewRole.current() !== 'admin') {
+    document.getElementById('no-access-card').style.display = 'block';
+  }
+</script>
+</body>
+</html>

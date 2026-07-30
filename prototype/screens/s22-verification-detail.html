@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S22 · ตรวจสอบสลิป — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .verify-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: var(--gap); align-items: start; }
+  @media (max-width: 900px) { .verify-grid { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body data-style="a" data-screen="S22" data-title="ตรวจสอบสลิป">
+<div class="page-content" id="page-content">
+
+  <a class="btn btn-ghost btn-sm" style="align-self:flex-start;" href="s21-verification-queue.html">← รอตรวจสอบ</a>
+
+  <div class="verify-grid">
+    <div class="card">
+      <h3>สลิปการชำระเงิน</h3>
+      <div class="slip-viewer">
+        <div class="slip-fake-img">
+          <div>🧾</div>
+          <div>สลิปโอนเงิน (ตัวอย่าง)</div>
+          <div class="muted" id="slip-amount"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="display:flex; flex-direction:column; gap:12px;">
+      <h3>ใบแจ้งหนี้ #<span id="inv-number"></span> — ห้อง <span id="inv-room"></span></h3>
+      <div class="mm-line"><span class="mm-label">ยอดใบแจ้งหนี้</span><span class="mm-amount money" id="inv-total"></span></div>
+      <div class="mm-line"><span class="mm-label">ยอดที่บันทึกไว้</span><span class="mm-amount money" id="paid-amount"></span></div>
+      <div class="mm-line"><span class="mm-label">ค่าปรับล่าช้า (ล็อกแล้ว)</span><span class="mm-amount money" id="late-fee"></span></div>
+      <div class="match-indicator match" id="match-indicator">✓ ยอดตรงกัน</div>
+      <div class="mm-line"><span class="mm-label">วิธีชำระ</span><span class="mm-amount" id="method"></span></div>
+      <div class="mm-line"><span class="mm-label">ส่งโดย</span><span class="mm-amount" id="submitted-by"></span></div>
+
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button type="button" class="btn btn-primary" id="btn-verify">ยืนยันถูกต้อง</button>
+        <button type="button" class="btn btn-danger" id="btn-reject">ปฏิเสธ</button>
+      </div>
+      <div class="demo-note">เฉพาะผู้ดูแลระบบ (Admin) เท่านั้นที่สามารถยืนยันการชำระเงินได้</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- S23 — Reject reason modal -->
+<div class="modal-overlay" id="reject-modal" aria-hidden="true">
+  <div class="modal-box">
+    <span class="screen-id">S23 · เหตุผลที่ปฏิเสธ</span>
+    <h2>ระบุเหตุผลที่ปฏิเสธ</h2>
+    <div class="field full">
+      <label>เหตุผล <span class="req">*</span></label>
+      <textarea id="reject-reason" rows="3"></textarea>
+      <div class="error" id="reject-error" style="display:none;">กรุณาระบุเหตุผล ห้ามเว้นว่าง</div>
+    </div>
+    <div class="mm-note">สลิปและประวัติการชำระเงินจะยังถูกเก็บไว้ในระบบ ไม่ถูกลบ</div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="reject-cancel">ยกเลิก</button>
+      <button type="button" class="btn btn-danger" id="reject-confirm">ยืนยันปฏิเสธ</button>
+    </div>
+  </div>
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var qsAmp = qs.replace(/^\?/, '&');
+  var params = new URLSearchParams(qs);
+  var invNo = params.get('invoice') || '1041';
+  var inv = D.findInvoice(invNo);
+
+  var METHOD_LABEL = { transfer: 'โอนเงิน', qr: 'QR พร้อมเพย์', cash: 'เงินสด' };
+
+  document.getElementById('inv-number').textContent = inv.number;
+  document.getElementById('inv-room').textContent = inv.room;
+  document.getElementById('inv-total').textContent = D.money(inv.total);
+  document.getElementById('paid-amount').textContent = D.money(inv.total);
+  document.getElementById('late-fee').textContent = D.money(inv.lateFeeFrozen || 0);
+  document.getElementById('method').textContent = METHOD_LABEL[inv.method] || 'โอนเงิน';
+  document.getElementById('submitted-by').textContent = inv.submittedBy || '-';
+  document.getElementById('slip-amount').textContent = D.money(inv.total);
+
+  document.getElementById('btn-verify').addEventListener('click', function () {
+    location.href = 's21-verification-queue.html?banner=' + encodeURIComponent('ยืนยันการชำระเงินใบแจ้งหนี้ #' + inv.number + ' แล้ว') + qsAmp;
+  });
+
+  document.getElementById('btn-reject').addEventListener('click', function (e) { Demo.openDialog('reject-modal', e.currentTarget); });
+  document.getElementById('reject-cancel').addEventListener('click', function () { Demo.closeDialog('reject-modal'); });
+  document.getElementById('reject-confirm').addEventListener('click', function () {
+    var reason = document.getElementById('reject-reason').value.trim();
+    if (!reason) {
+      document.getElementById('reject-error').style.display = 'block';
+      return;
+    }
+    location.href = 's21-verification-queue.html?banner=' + encodeURIComponent('ปฏิเสธใบแจ้งหนี้ #' + inv.number + ' แล้ว') + qsAmp;
+  });
+</script>
+</body>
+</html>

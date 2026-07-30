@@ -1,0 +1,69 @@
+
+<h2 class="sr-only">Low-fidelity wireframe of S26 Daily Check-in Form — guest registration with money breakdown, designed for under 60 seconds</h2>
+<style>
+.wf3 { font-family: var(--font-sans); background: var(--surface-0); border: 1px solid var(--border-strong); border-radius: 8px; overflow: hidden; max-width: 720px; }
+.wf3 * { box-sizing: border-box; }
+.w3-head { display: flex; justify-content: space-between; padding: 8px 14px; border-bottom: 1px dashed var(--border-strong); font-size: 11px; color: var(--text-secondary); }
+.w3-body { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; padding: 14px; }
+.fld { margin-bottom: 8px; }
+.fld label { display: block; font-size: 9px; color: var(--text-muted); margin-bottom: 2px; }
+.fld .in { border: 1px solid var(--border-strong); border-radius: 4px; padding: 5px 8px; font-size: 11px; color: var(--text-primary); background: var(--surface-0); }
+.fld .in.ghost { color: var(--text-muted); }
+.fld2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.sec-t { font-size: 10px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; margin: 0 0 6px; }
+.mcard { border: 1px solid var(--border-strong); border-radius: 8px; padding: 10px 12px; }
+.mline { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-secondary); padding: 3px 0; }
+.mline.total { border-top: 1px solid var(--border-strong); margin-top: 4px; padding-top: 6px; font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.paybtn { border: 2px solid var(--text-primary); border-radius: 6px; text-align: center; padding: 9px; font-size: 12px; font-weight: 600; color: var(--text-primary); margin-top: 10px; }
+.paytog { display: flex; gap: 6px; margin-top: 8px; }
+.paytog span { flex: 1; border: 1px solid var(--border-strong); border-radius: 4px; text-align: center; padding: 4px; font-size: 10px; color: var(--text-secondary); }
+.paytog .on { background: var(--surface-2); color: var(--text-primary); font-weight: 600; }
+.ret { border: 1px dashed var(--border-strong); border-radius: 6px; padding: 6px 9px; font-size: 9px; color: var(--text-muted); margin-bottom: 8px; }
+.roomtag { border: 1px solid var(--border-strong); border-radius: 4px; padding: 3px 8px; font-size: 10px; color: var(--text-primary); background: var(--surface-1); }
+</style>
+
+<p style="font-size:11px;color:var(--text-muted);margin:0 0 6px;">S26 · Daily Check-in — walk-in variant · opened from S25 "+ Walk-in" with room 205 picked · one screen, one typing burst</p>
+
+<div class="wf3">
+  <div class="w3-head">
+    <span>← วันนี้ &nbsp;·&nbsp; <b style="color:var(--text-primary);">เช็คอิน Walk-in</b></span>
+    <span>ห้อง <span class="roomtag">205 · แอร์</span> เปลี่ยน▾</span>
+  </div>
+  <div class="w3-body">
+
+    <div>
+      <p class="sec-t">ทะเบียนผู้พัก (ตามกฎหมาย)</p>
+      <div class="ret">📱 08x-xxx-5678 — <b style="color:var(--text-secondary);">เคยพักเมื่อ มี.ค. 69</b> · ดึงข้อมูลเดิม →</div>
+      <div class="fld"><label>ชื่อ-นามสกุล *</label><div class="in">มาลี สุขใจ</div></div>
+      <div class="fld2">
+        <div class="fld"><label>เลขบัตรประชาชน / Passport *</label><div class="in">1-3399-xxxxx-xx-x</div></div>
+        <div class="fld"><label>สัญชาติ *</label><div class="in">ไทย ▾ <span style="font-size:8px;color:var(--text-muted);">(default)</span></div></div>
+      </div>
+      <div class="fld"><label>ที่อยู่ *</label><div class="in ghost">ตามบัตรประชาชน…</div></div>
+      <div class="fld2">
+        <div class="fld"><label>เบอร์โทร *</label><div class="in">08x-xxx-5678</div></div>
+        <div class="fld"><label>จำนวนผู้พัก</label><div class="in">2 ▾</div></div>
+      </div>
+      <p style="font-size:8px;color:var(--text-muted);margin:2px 0 0;">— ไม่มีช่องอื่น ไม่มีอีเมล ไม่มีรูป · ครบตามกฎหมายแล้วพอ —</p>
+    </div>
+
+    <div>
+      <p class="sec-t">จำนวนคืน</p>
+      <div class="fld2" style="margin-bottom:8px;">
+        <div class="fld"><label>เข้า</label><div class="in">วันนี้ 17 ก.ค.</div></div>
+        <div class="fld"><label>คืน</label><div class="in">2 ▾ &nbsp;→ ออก 19 ก.ค. 12:00</div></div>
+      </div>
+
+      <p class="sec-t">เก็บเงินวันนี้</p>
+      <div class="mcard">
+        <div class="mline"><span>ค่าห้อง 205 · ฿500 × 2 คืน</span><span>1,000</span></div>
+        <div class="mline"><span>มัดจำกุญแจ (คืนตอนออก)</span><span>500</span></div>
+        <div class="mline total"><span>เก็บทั้งหมด</span><span>฿1,500</span></div>
+      </div>
+      <div class="paytog"><span class="on">เงินสด</span><span>โอน + สลิป</span></div>
+      <div class="paybtn">รับเงิน ฿1,500 · เช็คอิน · จ่ายกุญแจ ✓</div>
+      <p style="font-size:8px;color:var(--text-muted);text-align:center;margin:6px 0 0;">→ ห้อง 205 เปลี่ยนเป็น "เข้าพัก" · ลงทะเบียนผู้พักบันทึกแล้ว</p>
+    </div>
+
+  </div>
+</div>

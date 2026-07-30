@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S05 · ค้นหาผู้เช่า — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S05" data-title="ค้นหาผู้เช่า">
+<div class="page-content" id="page-content">
+
+  <div class="wizard-stepper">
+    <div class="wiz-step current"><span class="wiz-num">1</span> ค้นหาผู้เช่า</div>
+    <div class="wiz-connector"></div>
+    <div class="wiz-step"><span class="wiz-num">2</span> ข้อมูลการเข้าพัก</div>
+  </div>
+
+  <div class="card" style="max-width:440px;">
+    <h3>กรอกเบอร์โทรศัพท์ผู้เช่า/แขก</h3>
+    <div id="room-select-slot"></div>
+    <form id="lookup-form">
+      <div class="field full" style="margin-bottom:14px;">
+        <label>เบอร์โทรศัพท์ <span class="req">*</span></label>
+        <input type="tel" id="phone" placeholder="เช่น 081-234-5678" required>
+        <div class="hint">ลองใช้ 081-234-5678 (มีในระบบ) หรือเบอร์อื่นเพื่อดูขั้นตอนลงทะเบียนใหม่</div>
+      </div>
+      <button type="submit" class="btn btn-primary" data-primary>ค้นหา</button>
+    </form>
+  </div>
+
+</div>
+
+<!-- S06 — Match confirmation modal -->
+<div class="modal-overlay" id="match-modal" aria-hidden="true">
+  <div class="modal-box">
+    <span class="screen-id">S06 · ยืนยันข้อมูล</span>
+    <h2>พบข้อมูลผู้เช่า</h2>
+    <div class="tenant-chip" id="match-chip"><span class="tc-name" id="match-name"></span><span class="tc-phone" id="match-phone"></span></div>
+    <div class="muted" id="match-history" style="font-size:13px;"></div>
+    <p>ใช่ผู้เช่ารายนี้หรือไม่?</p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="match-no">ไม่ใช่ ค้นหาใหม่</button>
+      <button type="button" class="btn btn-primary" id="match-yes">ใช่ ใช้ข้อมูลนี้</button>
+    </div>
+  </div>
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var qsAmp = qs.replace(/^\?/, '&');
+  var params = new URLSearchParams(qs);
+  var flow = params.get('flow') === 'daily' ? 'daily' : 'monthly';
+  var roomNo = params.get('room');
+
+  // If no room was pre-selected (Quick Actions path), require a pick first.
+  if (!roomNo) {
+    var candidates = D.rooms.filter(function (r) { return r.rentalType === flow && r.state === 'vacant'; });
+    var options = candidates.map(function (r) { return '<option value="' + r.number + '">ห้อง ' + r.number + '</option>'; }).join('');
+    document.getElementById('room-select-slot').innerHTML =
+      '<div class="field full" style="margin-bottom:14px;">' +
+        '<label>เลือกห้องว่าง (' + (flow === 'monthly' ? 'รายเดือน' : 'รายวัน') + ') <span class="req">*</span></label>' +
+        '<select id="room-pick">' + options + '</select>' +
+      '</div>';
+  }
+
+  function currentRoom() {
+    return roomNo || document.getElementById('room-pick').value;
+  }
+
+  var lastPhone = '';
+  var form = document.getElementById('lookup-form');
+  Demo.submitWithSpinner(form, function (e, restore) {
+    lastPhone = document.getElementById('phone').value.trim();
+    var tenant = D.findTenantByPhone(lastPhone);
+    if (tenant) {
+      document.getElementById('match-name').textContent = tenant.name;
+      document.getElementById('match-phone').textContent = tenant.phone;
+      document.getElementById('match-history').textContent = tenant.history;
+      document.getElementById('match-chip').classList.toggle('monthly', flow === 'monthly');
+      document.getElementById('match-chip').classList.toggle('daily', flow === 'daily');
+      Demo.openDialog('match-modal', form.querySelector('[data-primary]'));
+      restore();
+    } else {
+      var dest = flow === 'monthly' ? 's08-monthly-tenancy.html' : 's10-daily-booking.html';
+      location.href = 's07-new-tenant.html?phone=' + encodeURIComponent(lastPhone) + '&flow=' + flow + '&room=' + currentRoom() + qsAmp;
+    }
+  }, 500);
+
+  document.getElementById('match-no').addEventListener('click', function () {
+    Demo.closeDialog('match-modal');
+    document.getElementById('phone').value = '';
+    document.getElementById('phone').focus();
+  });
+  document.getElementById('match-yes').addEventListener('click', function () {
+    var tenant = D.findTenantByPhone(lastPhone);
+    var dest = flow === 'monthly' ? 's08-monthly-tenancy.html' : 's10-daily-booking.html';
+    location.href = dest + '?name=' + encodeURIComponent(tenant.name) + '&phone=' + encodeURIComponent(tenant.phone) +
+      '&room=' + currentRoom() + qsAmp;
+  });
+</script>
+</body>
+</html>

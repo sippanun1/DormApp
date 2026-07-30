@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S13 · จดมิเตอร์ — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S13" data-title="จดมิเตอร์">
+<div class="page-content" id="page-content">
+
+  <div class="card" style="max-width:720px;">
+    <h3>จดมิเตอร์ — ห้อง <span id="room-label"></span></h3>
+    <p class="muted" style="margin-bottom:10px;">กรอกเลขมิเตอร์ปัจจุบัน — เว้นว่างได้หากยังไม่ได้จดมิเตอร์ตัวนั้นวันนี้ ค่าก่อนหน้าเป็นค่าอ้างอิง แก้ไขไม่ได้</p>
+
+    <form id="meter-form">
+      <div class="meter-entry-row" data-utility="electric">
+        <div class="mer-room">⚡ ไฟฟ้า</div>
+        <div><label class="hint">อัตรา (บาท/หน่วย)</label><input type="number" class="mer-current" id="e-rate" step="0.01" style="width:90px; text-align:right;"></div>
+        <div class="mer-prev" id="e-prev"></div>
+        <input type="number" class="mer-current" id="e-current" placeholder="เลขปัจจุบัน" step="1">
+        <div class="mer-cost" id="e-cost">—</div>
+        <div></div>
+      </div>
+      <div class="meter-entry-row" data-utility="water">
+        <div class="mer-room">💧 น้ำ</div>
+        <div><label class="hint">อัตรา (บาท/หน่วย)</label><input type="number" class="mer-current" id="w-rate" step="0.01" style="width:90px; text-align:right;"></div>
+        <div class="mer-prev" id="w-prev"></div>
+        <input type="number" class="mer-current" id="w-current" placeholder="เลขปัจจุบัน" step="1">
+        <div class="mer-cost" id="w-cost">—</div>
+        <div></div>
+      </div>
+
+      <div id="warning-slot"></div>
+
+      <div style="display:flex; gap:10px; margin-top:16px;">
+        <button type="submit" class="btn btn-primary" data-primary>บันทึกการอ่านมิเตอร์</button>
+        <a class="btn btn-secondary" href="s04-room-detail.html" id="cancel-link">ยกเลิก</a>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var qsAmp = qs.replace(/^\?/, '&');
+  var params = new URLSearchParams(qs);
+  var room = params.get('room') || '105';
+
+  document.getElementById('room-label').textContent = room;
+  document.getElementById('cancel-link').href = 's04-room-detail.html?room=' + room + qsAmp;
+
+  var inv = D.invoice; // demo previous readings reused from Room 105's on-file data
+  document.getElementById('e-prev').textContent = inv.electric.prev;
+  document.getElementById('w-prev').textContent = inv.water.prev;
+  document.getElementById('e-rate').value = inv.electric.rate;
+  document.getElementById('w-rate').value = inv.water.rate;
+
+  function recalc(prefix, prev) {
+    var cur = document.getElementById(prefix + '-current').value;
+    var rate = parseFloat(document.getElementById(prefix + '-rate').value) || 0;
+    var costEl = document.getElementById(prefix + '-cost');
+    var row = document.querySelector('.meter-entry-row[data-utility="' + (prefix === 'e' ? 'electric' : 'water') + '"]');
+    if (cur === '') { costEl.textContent = '—'; row.classList.remove('warning'); return; }
+    var units = Number(cur) - prev;
+    if (units < 0) {
+      costEl.innerHTML = '<span class="mer-flag">ค่าต่ำกว่าก่อนหน้า — ตรวจสอบ</span>';
+      row.classList.add('warning');
+      return;
+    }
+    row.classList.remove('warning');
+    var cost = units * rate;
+    costEl.innerHTML = D.money(cost.toFixed(2)) + '<span class="mer-units">' + units + ' หน่วย</span>';
+  }
+  ['e-current', 'e-rate'].forEach(function (id) { document.getElementById(id).addEventListener('input', function () { recalc('e', inv.electric.prev); }); });
+  ['w-current', 'w-rate'].forEach(function (id) { document.getElementById(id).addEventListener('input', function () { recalc('w', inv.water.prev); }); });
+
+  var form = document.getElementById('meter-form');
+  Demo.guardUnsaved(form);
+  Demo.submitWithSpinner(form, function (e, restore) {
+    var eCur = document.getElementById('e-current').value;
+    var wCur = document.getElementById('w-current').value;
+    if (!eCur && !wCur) {
+      document.getElementById('warning-slot').innerHTML =
+        '<div class="error" style="margin-top:8px;">กรุณากรอกเลขมิเตอร์อย่างน้อยหนึ่งตัว</div>';
+      restore();
+      return;
+    }
+    var parts = [];
+    if (eCur) parts.push('ไฟฟ้า');
+    if (wCur) parts.push('น้ำ');
+    location.href = 's04-room-detail.html?room=' + room + '&banner=' + encodeURIComponent('บันทึกมิเตอร์ (' + parts.join(', ') + ') ห้อง ' + room + ' แล้ว') + qsAmp;
+  }, 600);
+</script>
+</body>
+</html>

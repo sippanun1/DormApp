@@ -1,0 +1,114 @@
+
+<h2 class="sr-only">Low-fidelity wireframe of S03 Room Grid — 60 rooms on one screen with detail drawer open</h2>
+<style>
+.wf { font-family: var(--font-sans); background: var(--surface-0); border: 1px solid var(--border-strong); border-radius: 8px; overflow: hidden; }
+.wf * { box-sizing: border-box; }
+.wf-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; border-bottom: 1px dashed var(--border-strong); font-size: 11px; color: var(--text-secondary); }
+.wf-body { display: flex; min-height: 430px; }
+.wf-side { width: 110px; border-right: 1px dashed var(--border-strong); padding: 10px 8px; font-size: 10px; color: var(--text-muted); }
+.wf-side div { padding: 5px 6px; margin-bottom: 2px; border-radius: 4px; }
+.wf-side .on { background: var(--surface-2); color: var(--text-primary); border: 1px solid var(--border-strong); }
+.wf-main { flex: 1; padding: 10px 12px; min-width: 0; }
+.wf-drawer { width: 210px; border-left: 1px dashed var(--border-strong); padding: 10px; font-size: 10px; }
+.fbar { display: flex; gap: 6px; margin-bottom: 8px; font-size: 10px; }
+.chip { border: 1px solid var(--border-strong); border-radius: 99px; padding: 2px 10px; color: var(--text-secondary); }
+.chip.on { background: var(--surface-2); color: var(--text-primary); }
+.search { flex: 1; border: 1px dashed var(--border-strong); border-radius: 4px; padding: 2px 8px; color: var(--text-muted); text-align: right; }
+.kpis { display: flex; gap: 8px; margin-bottom: 10px; }
+.kpi { flex: 1; border: 1px solid var(--border-strong); border-radius: 6px; padding: 6px 10px; }
+.kpi b { display: block; font-size: 16px; color: var(--text-primary); }
+.kpi span { font-size: 9px; color: var(--text-muted); }
+.floor { margin-bottom: 8px; }
+.floor-label { font-size: 10px; color: var(--text-muted); margin-bottom: 3px; }
+.row20 { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.rc { border: 1px solid var(--border-strong); border-radius: 4px; text-align: center; padding: 5px 0 4px; font-size: 9px; color: var(--text-primary); position: relative; background: var(--surface-1); cursor: pointer; }
+.rc.occ { background: var(--border); }
+.rc.dirty { background: repeating-linear-gradient(45deg, var(--surface-1), var(--surface-1) 3px, var(--border) 3px, var(--border) 6px); }
+.rc.clean { background: var(--surface-0); }
+.rc.maint { background: var(--surface-2); border-style: dashed; }
+.rc.blocked { background: var(--surface-2); color: var(--text-muted); text-decoration: line-through; }
+.rc.sel { outline: 2px solid var(--text-primary); }
+.rc .dot { position: absolute; top: 2px; right: 2px; width: 5px; height: 5px; border-radius: 50%; background: var(--text-primary); }
+.legend { display: flex; gap: 10px; font-size: 9px; color: var(--text-muted); margin-top: 6px; flex-wrap: wrap; }
+.lg { display: flex; align-items: center; gap: 4px; }
+.lg i { width: 10px; height: 10px; border: 1px solid var(--border-strong); border-radius: 2px; display: inline-block; }
+.dsec { border: 1px dashed var(--border-strong); border-radius: 6px; padding: 6px 8px; margin-bottom: 6px; color: var(--text-secondary); }
+.dsec b { color: var(--text-primary); display: block; margin-bottom: 2px; font-size: 10px; }
+.dbtn { border: 1px solid var(--border-strong); border-radius: 4px; padding: 4px; text-align: center; margin-top: 4px; color: var(--text-primary); }
+</style>
+
+<p style="font-size:11px;color:var(--text-muted);margin:0 0 6px;">S03 · Room Grid — low-fi · desktop 1280px · drawer open (S04) after clicking 205</p>
+
+<div class="wf">
+  <div class="wf-head">
+    <span>☰ &nbsp; Amanew Residence</span>
+    <span>🔔 3 &nbsp;·&nbsp; สมชาย (owner) ▾</span>
+  </div>
+  <div class="wf-body">
+    <div class="wf-side">
+      <div>Dashboard</div>
+      <div class="on">Rooms</div>
+      <div>Calendar</div>
+      <div>Inquiries</div>
+      <div>Billing</div>
+      <div>Tenants</div>
+      <div>More ▾</div>
+    </div>
+    <div class="wf-main">
+      <div class="fbar">
+        <span class="chip on">ทั้งหมด</span><span class="chip">แอร์</span><span class="chip">พัดลม</span>
+        <span class="chip">ว่าง</span><span class="chip">ค้างชำระ</span>
+        <span class="search">🔍 ค้นหาห้อง/ผู้เช่า</span>
+      </div>
+      <div class="kpis">
+        <div class="kpi"><b>60</b><span>ห้องทั้งหมด</span></div>
+        <div class="kpi"><b>47</b><span>มีผู้เช่า</span></div>
+        <div class="kpi"><b>8</b><span>ว่างพร้อมขาย</span></div>
+        <div class="kpi"><b>5</b><span>ค้างชำระ →</span></div>
+      </div>
+      <div id="floors"></div>
+      <div class="legend">
+        <span class="lg"><i style="background:var(--surface-0);"></i> ว่าง-สะอาด</span>
+        <span class="lg"><i style="background:var(--border);"></i> มีผู้เช่า/เข้าพัก</span>
+        <span class="lg"><i style="background:repeating-linear-gradient(45deg,var(--surface-1),var(--surface-1) 3px,var(--border) 3px,var(--border) 6px);"></i> ว่าง-รอทำความสะอาด</span>
+        <span class="lg"><i style="border-style:dashed;background:var(--surface-2);"></i> ซ่อมบำรุง</span>
+        <span class="lg"><i style="background:var(--surface-2);"></i> ปิดใช้งาน</span>
+        <span class="lg"><span class="dot" style="position:static;width:5px;height:5px;border-radius:50%;background:var(--text-primary);display:inline-block;"></span> ค้างชำระ</span>
+      </div>
+    </div>
+    <div class="wf-drawer">
+      <b style="font-size:12px;color:var(--text-primary);">ห้อง 205 · แอร์</b>
+      <span style="font-size:9px;color:var(--text-muted);"> มีผู้เช่า · ● ค้างชำระ</span>
+      <div class="dsec" style="margin-top:6px;"><b>ผู้เช่า</b>คุณสมหญิง ก. · 08x-xxx-xxxx<br>เข้าอยู่ 1 ก.พ. 69 · สัญญา 12 เดือน</div>
+      <div class="dsec"><b>บิลปัจจุบัน</b>ก.ค. 69 · ฿4,150<br>เกินกำหนด 3 วัน · ค่าปรับ ฿150</div>
+      <div class="dsec"><b>มิเตอร์ล่าสุด</b>ไฟ 4,120 · น้ำ 512 · 📷</div>
+      <div class="dsec"><b>เงินประกัน</b>฿7,000 · ถือครองอยู่</div>
+      <div class="dbtn">ดูบิล / ประวัติ</div>
+      <div class="dbtn">ย้ายห้อง · แจ้งย้ายออก</div>
+      <div class="dbtn" style="border-style:dashed;color:var(--text-muted);">ปิดใช้งานห้อง</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const states = [];
+// Floor 3: mostly occupied
+for (let i=1;i<=20;i++){ states.push({n:300+i, s: i%7===0?'clean': i%11===0?'dirty':'occ', d: i===5||i===13}); }
+// Floor 2: mix, 205 selected
+for (let i=1;i<=20;i++){ states.push({n:200+i, s: i===8?'maint': i%6===0?'clean': i%9===0?'dirty':'occ', d: i===5||i===17, sel:i===5}); }
+// Floor 1: has blocked + vacant
+for (let i=1;i<=20;i++){ states.push({n:100+i, s: i===1?'blocked': i%5===0?'clean': i%8===0?'dirty':'occ', d: i===11}); }
+const wrap = document.getElementById('floors');
+[3,2,1].forEach(f=>{
+  const fl = document.createElement('div'); fl.className='floor';
+  fl.innerHTML = '<div class="floor-label">ชั้น '+f+'</div>';
+  const row = document.createElement('div'); row.className='row20';
+  states.filter(r=>Math.floor(r.n/100)===f).forEach(r=>{
+    const c = document.createElement('div');
+    c.className = 'rc '+r.s+(r.sel?' sel':'');
+    c.innerHTML = r.n + (r.d?'<span class="dot"></span>':'');
+    row.appendChild(c);
+  });
+  fl.appendChild(row); wrap.appendChild(fl);
+});
+</script>

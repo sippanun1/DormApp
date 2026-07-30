@@ -1,0 +1,86 @@
+/* Amanew prototype — supplementary screen styles.
+   tokens.css / components.css are frozen; this file adds only what those
+   two don't cover (modal/dialog overlay chrome, spinner, tab bar, room
+   mini-grid, legend) — still token-only, no hardcoded colors. */
+
+.modal-overlay, .dialog-overlay {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, .4);
+  display: none; align-items: center; justify-content: center; z-index: 60;
+  padding: 20px;
+}
+.modal-overlay.open, .dialog-overlay.open { display: flex; }
+.modal-box, .dialog-box {
+  background: var(--card-bg); border-radius: var(--radius);
+  box-shadow: var(--drawer-shadow); max-width: 460px; width: 100%;
+  padding: 22px 24px; display: flex; flex-direction: column; gap: 14px;
+}
+.dialog-box .dialog-reason { font-weight: 700; color: var(--danger); font-size: 15px; }
+.dialog-box .dialog-what { color: var(--text); }
+.dialog-box .dialog-next { color: var(--text-muted); font-size: 13px; }
+.dialog-box .dialog-actions, .modal-box .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+.modal-box h2, .dialog-box h2 { font-size: 17px; }
+
+.spinner {
+  display: inline-block; width: 14px; height: 14px; border-radius: 999px;
+  border: 2px solid rgba(255,255,255,.4); border-top-color: currentColor;
+  animation: spin .7s linear infinite; vertical-align: -2px;
+}
+.btn-secondary .spinner, .btn-ghost .spinner { border: 2px solid var(--border); border-top-color: var(--primary); }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.success-banner {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--success-soft); color: var(--success);
+  border-radius: var(--radius); padding: 12px 16px; font-weight: 600; font-size: 14px;
+}
+
+.tab-bar { display: flex; gap: 4px; border-bottom: 1px solid var(--border); }
+.tab-bar button {
+  background: none; border: none; padding: 9px 16px; font-size: var(--fs-base);
+  color: var(--text-muted); font-weight: 600; border-bottom: 2px solid transparent;
+}
+.tab-bar button.active { color: var(--primary); border-bottom-color: var(--primary); }
+
+.room-mini-grid { display: grid; grid-template-columns: repeat(15, 1fr); gap: 6px; }
+.floor-label { font-size: 12px; font-weight: 700; color: var(--text-muted); margin: 10px 0 2px; }
+
+.demo-note {
+  font-size: 12px; color: var(--text-muted); background: var(--surface);
+  border: 1px dashed var(--border); border-radius: var(--radius); padding: 8px 12px;
+}
+
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--text-muted); }
+.legend .legend-item { display: flex; align-items: center; gap: 6px; }
+.legend .swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+
+.page-header-row { display: flex; align-items: center; gap: 12px; }
+.page-header-row .spacer { flex: 1; }
+
+.tenant-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--primary-soft); border-radius: var(--radius);
+  padding: 8px 12px; font-size: var(--fs-base);
+}
+.tenant-chip .tc-name { font-weight: 600; }
+.tenant-chip .tc-phone { color: var(--text-muted); font-size: 12px; }
+/* rental-type accent — same monthly/daily colors as the dashboard shortcuts + room grid */
+.tenant-chip.monthly { background: var(--rental-monthly-soft); }
+.tenant-chip.monthly .tc-name { color: var(--rental-monthly); }
+.tenant-chip.daily { background: var(--rental-daily-soft); }
+.tenant-chip.daily .tc-name { color: var(--rental-daily); }
+
+.slip-viewer {
+  background: var(--surface); border: 1px dashed var(--border); border-radius: var(--radius);
+  min-height: 340px; display: flex; align-items: center; justify-content: center;
+  font-size: 13px; color: var(--text-muted); flex-direction: column; gap: 8px;
+}
+.slip-viewer .slip-fake-img {
+  width: 220px; height: 260px; background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 6px; box-shadow: var(--card-shadow);
+  font-size: 12px; color: var(--text);
+}
+
+.match-indicator { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.match-indicator.match { color: var(--success); }
+.match-indicator.mismatch { color: var(--danger); }

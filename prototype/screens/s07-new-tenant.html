@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S07 · ลงทะเบียนผู้เช่าใหม่ — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S07" data-title="ลงทะเบียนผู้เช่าใหม่">
+<div class="page-content" id="page-content">
+
+  <div class="wizard-stepper">
+    <div class="wiz-step done"><span class="wiz-num">✓</span> ค้นหาผู้เช่า</div>
+    <div class="wiz-connector"></div>
+    <div class="wiz-step current"><span class="wiz-num">2</span> ลงทะเบียนใหม่</div>
+  </div>
+
+  <div class="card" style="max-width:640px;">
+    <h3>ไม่พบผู้เช่ารายนี้ในระบบ — กรอกข้อมูลเพื่อลงทะเบียนใหม่</h3>
+    <form id="tenant-form" class="form-grid">
+      <div class="field full">
+        <label>ชื่อ-นามสกุล <span class="req">*</span></label>
+        <input type="text" id="full-name" required>
+      </div>
+      <div class="field prefilled full">
+        <label>เบอร์โทรศัพท์</label>
+        <input type="tel" id="phone" disabled>
+      </div>
+      <div class="field">
+        <label>วันเกิด (ไม่บังคับ)</label>
+        <input type="date" id="dob">
+      </div>
+      <div class="field">
+        <label>เลขบัตรประชาชน (ไม่บังคับ)</label>
+        <input type="text" id="national-id">
+      </div>
+      <div class="field">
+        <label>ชื่อผู้ปกครอง (ไม่บังคับ)</label>
+        <input type="text" id="guardian-name">
+      </div>
+      <div class="field">
+        <label>เบอร์ผู้ปกครอง (ไม่บังคับ)</label>
+        <input type="tel" id="guardian-phone">
+      </div>
+      <div class="field full" style="flex-direction:row; gap:10px; margin-top:6px;">
+        <button type="submit" class="btn btn-primary" data-primary>บันทึกและดำเนินการต่อ</button>
+        <a class="btn btn-secondary" href="s05-tenant-lookup.html" id="cancel-link">ยกเลิก</a>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var qs = location.search;
+  var qsAmp = qs.replace(/^\?/, '&');
+  var params = new URLSearchParams(qs);
+  var flow = params.get('flow') === 'daily' ? 'daily' : 'monthly';
+  var room = params.get('room') || '';
+  var phone = params.get('phone') || '';
+
+  document.getElementById('phone').value = phone;
+  document.getElementById('cancel-link').href = 's05-tenant-lookup.html?flow=' + flow + (room ? '&room=' + room : '') +
+    (qsAmp || '');
+
+  var form = document.getElementById('tenant-form');
+  Demo.guardUnsaved(form);
+  Demo.submitWithSpinner(form, function (e, restore) {
+    var name = document.getElementById('full-name').value.trim();
+    var dest = flow === 'monthly' ? 's08-monthly-tenancy.html' : 's10-daily-booking.html';
+    location.href = dest + '?name=' + encodeURIComponent(name) + '&phone=' + encodeURIComponent(phone) +
+      '&room=' + room + qsAmp;
+  }, 600);
+</script>
+</body>
+</html>

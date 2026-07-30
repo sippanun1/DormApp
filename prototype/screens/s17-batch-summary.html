@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S17 · สรุปสร้างบิลทั้งหมด — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S17" data-title="สรุปสร้างบิลทั้งหมด">
+<div class="page-content" id="page-content">
+
+  <div class="kpi-row">
+    <div class="kpi-tile kpi-success"><div class="kpi-num">3</div><div class="kpi-label">สร้างบิลสำเร็จ</div></div>
+    <div class="kpi-tile"><div class="kpi-num">1</div><div class="kpi-label">สร้างไปแล้วก่อนหน้า</div></div>
+    <div class="kpi-tile kpi-danger"><div class="kpi-num">1</div><div class="kpi-label">ข้อมูลไม่ครบ</div></div>
+  </div>
+
+  <div class="card">
+    <h3>✓ สร้างบิลสำเร็จ (3)</h3>
+    <table class="data-table">
+      <tbody>
+        <tr><td>ห้อง 105</td><td class="td-muted">คุณสมชาย ใจดี</td><td class="td-money">฿4,980</td></tr>
+        <tr><td>ห้อง 210</td><td class="td-muted">คุณวิชัย ทองคำ</td><td class="td-money">฿4,820</td></tr>
+        <tr><td>ห้อง 312</td><td class="td-muted">คุณสุนีย์ แสงจันทร์</td><td class="td-money">฿5,100</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>สร้างไปแล้วก่อนหน้า (1)</h3>
+    <p class="muted" style="font-size:13px;">ห้องเหล่านี้มีใบแจ้งหนี้ของงวดนี้อยู่แล้ว — ไม่มีการสร้างซ้ำ</p>
+    <table class="data-table">
+      <tbody>
+        <tr><td>ห้อง 109</td><td class="td-muted">คุณอนันต์ รุ่งเรือง</td><td class="td-muted">มีใบแจ้งหนี้แล้ว</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>ข้อมูลไม่ครบ (1) — ต้องดำเนินการ</h3>
+    <table class="data-table">
+      <tbody>
+        <tr>
+          <td>ห้อง 202</td>
+          <td class="td-muted">คุณมาลี พงษ์ไพศาล</td>
+          <td><span class="status-badge badge-warning">ขาดค่าน้ำ</span></td>
+          <td><a class="btn btn-sm btn-secondary" href="s13-meter-reading.html?room=202">กรอกค่ามิเตอร์</a></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="demo-note">สามารถกดสร้างบิลทั้งหมดซ้ำได้ตลอด — ห้องที่เสร็จแล้วจะไม่ถูกสร้างซ้ำ (ป้องกันโดยข้อจำกัดของฐานข้อมูล)</div>
+
+  <a class="btn btn-primary" style="align-self:flex-start;" href="s18-invoice-list.html">ไปที่รายการใบแจ้งหนี้</a>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+</body>
+</html>

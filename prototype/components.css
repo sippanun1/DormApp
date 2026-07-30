@@ -1,0 +1,496 @@
+/* ============================================================
+   Amanew — Component Library (Handoff §4, 16 components)
+   Styled ONLY through tokens.css variables so every component
+   renders correctly in styles A / B / C.
+   ============================================================ */
+
+/* ---------- App shell: sidebar + topbar + content ---------- */
+.app { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+
+.sidebar {
+  background: var(--chrome-bg);
+  color: var(--chrome-text);
+  border-right: 1px solid var(--chrome-border);
+  padding: 16px 10px;
+  display: flex; flex-direction: column; gap: 2px;
+  position: sticky; top: 0; height: 100vh;
+}
+.sidebar .brand {
+  font-family: var(--font-heading); font-weight: 700; font-size: 17px;
+  color: var(--chrome-text);
+  padding: 6px 12px 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.sidebar .brand .logo-dot {
+  width: 26px; height: 26px; border-radius: 8px;
+  background: var(--primary); color: var(--primary-contrast);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 13px; flex: none;
+}
+.sidebar .nav-section {
+  font-size: 11px; color: var(--chrome-muted);
+  padding: 14px 12px 4px; text-transform: uppercase; letter-spacing: .04em;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 9px;
+  padding: 8px 12px; border-radius: var(--radius);
+  color: var(--chrome-text); font-size: var(--fs-base);
+}
+.nav-item .nav-ic { width: 18px; text-align: center; opacity: .75; flex: none; }
+.nav-item:hover { background: var(--chrome-active-bg); }
+.nav-item.active { background: var(--chrome-active-bg); color: var(--chrome-active-text); font-weight: 600; }
+.nav-item .nav-count {
+  margin-left: auto; font-size: 11px; font-weight: 700;
+  background: var(--danger); color: #fff;
+  border-radius: 999px; padding: 1px 7px;
+}
+
+.main { display: flex; flex-direction: column; min-width: 0; }
+
+.topbar {
+  background: var(--chrome-bg); color: var(--chrome-text);
+  border-bottom: 1px solid var(--chrome-border);
+  padding: 12px 24px;
+  display: flex; align-items: center; gap: 14px;
+  position: sticky; top: 0; z-index: 20;
+}
+.topbar h1 { font-size: 18px; color: var(--chrome-text); }
+.topbar .spacer { flex: 1; }
+.topbar .date-chip { color: var(--chrome-muted); font-size: 13px; }
+.user-chip {
+  display: flex; align-items: center; gap: 8px;
+  color: var(--chrome-text); font-size: 13px;
+}
+.user-chip .avatar {
+  width: 30px; height: 30px; border-radius: 999px;
+  background: var(--primary); color: var(--primary-contrast);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-weight: 600; font-size: 13px;
+}
+.bell {
+  position: relative; background: none; border: none;
+  color: var(--chrome-text); font-size: 17px; padding: 4px 6px;
+}
+.bell .bell-badge {
+  position: absolute; top: -2px; right: -4px;
+  background: var(--danger); color: #fff;
+  font-size: 10px; font-weight: 700;
+  border-radius: 999px; padding: 1px 5px; line-height: 1.3;
+}
+
+/* Screen ID chip — every page shows its spec ID */
+.screen-id {
+  font-size: 11px; font-weight: 600; letter-spacing: .03em;
+  color: var(--chrome-muted);
+  border: 1px solid var(--chrome-border);
+  border-radius: 999px; padding: 3px 10px; white-space: nowrap;
+}
+
+.page-content { padding: 22px 24px; display: flex; flex-direction: column; gap: var(--gap); }
+
+/* ---------- Generic card ---------- */
+.card {
+  background: var(--card-bg);
+  border: var(--card-border);
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  padding: var(--pad-card);
+}
+.card > h3 { font-size: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.card > h3 .h-link { margin-left: auto; font-size: 12px; font-weight: 500; }
+
+/* ---------- Buttons ---------- */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+  border-radius: var(--btn-radius);
+  padding: var(--btn-pad); font-weight: 600; font-size: var(--fs-base);
+  border: 1px solid transparent;
+  box-shadow: var(--interactive-shadow);
+  white-space: nowrap;
+}
+.btn-primary { background: var(--primary); color: var(--primary-contrast); }
+.btn-secondary { background: var(--card-bg); color: var(--text); border-color: var(--border); }
+.btn-ghost { background: none; color: var(--primary); box-shadow: none; }
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-success { background: var(--success); color: #fff; }
+/* rental-type accent — monthly vs daily, kept visually distinct everywhere (dashboard shortcuts, room grid) */
+.btn-monthly { background: var(--rental-monthly-soft); color: var(--rental-monthly); border-color: color-mix(in srgb, var(--rental-monthly) 40%, var(--border)); }
+.btn-daily   { background: var(--rental-daily-soft);   color: var(--rental-daily);   border-color: color-mix(in srgb, var(--rental-daily) 40%, var(--border)); }
+.btn-sm { padding: var(--btn-pad-sm); font-size: 12px; }
+.btn-lg { padding: 13px 26px; font-size: 16px; }
+.btn:hover { filter: brightness(.96); }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+/* ============================================================
+   1. StatusBadge — one semantic color system for ALL lifecycles
+   ============================================================ */
+.status-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  border-radius: 999px; font-weight: 600;
+  font-size: 12px; padding: 2px 10px; line-height: 1.6;
+  white-space: nowrap;
+}
+.status-badge::before { content: ''; width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
+.status-badge.sm { font-size: 11px; padding: 1px 8px; }
+.badge-success { background: var(--success-soft); color: var(--success); }
+.badge-info    { background: var(--info-soft);    color: var(--info); }
+.badge-warning { background: var(--warning-soft); color: var(--warning); }
+.badge-danger  { background: var(--danger-soft);  color: var(--danger); }
+.badge-neutral { background: var(--neutral-soft); color: var(--neutral); }
+
+/* ============================================================
+   2. RoomCard — grid-compact + picker · 6 state fills
+   ============================================================ */
+.room-card {
+  border-radius: calc(var(--radius) - 2px);
+  border: 1px solid var(--border);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  position: relative; font-weight: 600; color: var(--text);
+  font-family: var(--font-mono);
+}
+.room-card.grid-compact { min-height: 44px; font-size: 13px; }
+.room-card.picker { min-height: 64px; font-size: 15px; cursor: pointer; gap: 2px; }
+.room-card.picker:hover { outline: 2px solid var(--primary); }
+.room-card .overdue-dot {
+  position: absolute; top: 4px; right: 4px;
+  width: 8px; height: 8px; border-radius: 999px; background: var(--danger);
+}
+.room-card .room-sub { font-size: 10px; font-weight: 500; color: var(--text-muted); font-family: var(--font-body); }
+/* the fixed room-state enum */
+.state-vacant-clean { background: var(--success-soft); border-color: color-mix(in srgb, var(--success) 40%, var(--border)); }
+.state-occupied     { background: var(--info-soft);    border-color: color-mix(in srgb, var(--info) 35%, var(--border)); }
+.state-vacant-dirty {
+  background: repeating-linear-gradient(45deg, var(--warning-soft), var(--warning-soft) 6px,
+              color-mix(in srgb, var(--warning) 26%, var(--card-bg)) 6px,
+              color-mix(in srgb, var(--warning) 26%, var(--card-bg)) 12px);
+  border-color: color-mix(in srgb, var(--warning) 45%, var(--border));
+}
+.state-cleaning { background: var(--warning-soft); border-style: dotted; border-color: var(--warning); }
+.state-maintenance { background: var(--danger-soft); border-style: dashed; border-color: var(--danger); }
+.state-blocked { background: var(--neutral-soft); border-color: var(--neutral); color: var(--text-muted); }
+/* rental-type accent on top edge — same monthly/daily colors as the dashboard shortcuts */
+.room-card[data-rental="monthly"] { border-top: 3px solid var(--rental-monthly); }
+.room-card[data-rental="daily"]   { border-top: 3px solid var(--rental-daily); }
+
+/* ============================================================
+   3. MoneyMathCard — label/amount lines + bold computed total
+   ============================================================ */
+.money-math-card { background: var(--card-bg); border: var(--card-border); border-radius: var(--radius); box-shadow: var(--card-shadow); padding: var(--pad-card); }
+.money-math-card .mm-title { font-family: var(--font-heading); font-weight: var(--fw-heading); font-size: 14px; margin-bottom: 10px; }
+.mm-line { display: flex; justify-content: space-between; padding: 5px 0; font-size: var(--fs-base); }
+.mm-line .mm-label { color: var(--text-muted); }
+.mm-line .mm-amount { font-variant-numeric: tabular-nums; font-weight: 500; }
+.mm-line.mm-minus .mm-amount { color: var(--success); }
+.mm-line.mm-struck .mm-amount { text-decoration: line-through; color: var(--text-muted); }
+.mm-line.mm-late .mm-amount { color: var(--danger); font-weight: 700; }
+.mm-total { display: flex; justify-content: space-between; border-top: 2px solid var(--text); margin-top: 8px; padding-top: 10px; font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums; }
+.mm-note { font-size: 12px; color: var(--text-muted); margin-top: 8px; }
+
+/* ============================================================
+   4. MeterEntryRow — prev locked / current input / live cost
+   ============================================================ */
+.meter-entry-row {
+  display: grid; grid-template-columns: 64px 1fr 110px 110px 130px 44px; gap: 10px;
+  align-items: center; padding: var(--pad-cell);
+  border-bottom: 1px solid var(--border); background: var(--card-bg);
+}
+.meter-entry-row .mer-room { font-weight: 700; }
+.meter-entry-row .mer-prev {
+  background: var(--surface); border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px);
+  padding: 7px 10px; color: var(--text-muted); font-variant-numeric: tabular-nums; text-align: right;
+  font-family: var(--font-mono);
+}
+.meter-entry-row .mer-prev::after { content: ' 🔒'; font-size: 10px; }
+.meter-entry-row input.mer-current {
+  border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px);
+  padding: 7px 10px; width: 100%; text-align: right; font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}
+.meter-entry-row input.mer-current:focus { outline: 2px solid var(--primary); border-color: transparent; }
+.meter-entry-row .mer-cost { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
+.meter-entry-row .mer-cost .mer-units { display: block; font-size: 11px; color: var(--text-muted); font-weight: 400; font-family: var(--font-body); }
+.meter-entry-row.warning { background: var(--warning-soft); }
+.meter-entry-row.estimate .mer-cost { color: var(--warning); }
+.mer-camera { width: 38px; height: 38px; border-radius: calc(var(--radius) - 2px); border: 1px dashed var(--border); background: none; font-size: 15px; }
+.mer-flag { font-size: 11px; color: var(--warning); font-weight: 600; }
+
+/* ============================================================
+   5. TablePattern — FilterBar + columns + row → DetailDrawer
+   ============================================================ */
+.data-table { width: 100%; border-collapse: collapse; background: var(--card-bg); border-radius: var(--radius); overflow: hidden; }
+.data-table th {
+  text-align: left; font-size: 11px; color: var(--text-muted); font-weight: 600;
+  text-transform: uppercase; letter-spacing: .05em;
+  padding: var(--pad-cell); border-bottom: 1px solid var(--border); background: var(--surface);
+}
+.data-table td { padding: var(--pad-cell); border-bottom: 1px solid var(--border); vertical-align: middle; }
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tbody tr:hover { background: var(--primary-soft); cursor: pointer; }
+.data-table .td-money { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; font-family: var(--font-mono); }
+.data-table .td-muted { color: var(--text-muted); }
+
+/* ============================================================
+   6. DetailDrawer — right slide-over
+   ============================================================ */
+.drawer-overlay {
+  position: fixed; inset: 0; background: rgba(15, 23, 42, .35); z-index: 40;
+  display: none;
+}
+.drawer-overlay.open { display: block; }
+.drawer {
+  position: fixed; top: 0; right: 0; bottom: 0; width: 400px; max-width: 92vw;
+  background: var(--card-bg); box-shadow: var(--drawer-shadow); z-index: 50;
+  display: flex; flex-direction: column;
+  transform: translateX(105%); transition: transform .22s ease;
+}
+.drawer.open { transform: translateX(0); }
+.drawer-header {
+  padding: 16px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+}
+.drawer-header h2 { font-size: 18px; }
+.drawer-close { margin-left: auto; background: none; border: none; font-size: 20px; color: var(--text-muted); }
+.drawer-body { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+.drawer-section h4 { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 6px; text-transform: uppercase; letter-spacing: .03em; }
+.drawer-actions { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ============================================================
+   7. WizardStepper — numbered stations + footer
+   ============================================================ */
+.wizard-stepper { display: flex; align-items: center; gap: 4px; overflow-x: auto; padding: 4px 0; }
+.wiz-step { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 999px; font-size: 13px; color: var(--text-muted); white-space: nowrap; }
+.wiz-step .wiz-num {
+  width: 24px; height: 24px; border-radius: 999px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text-muted);
+}
+.wiz-step.done .wiz-num { background: var(--success); border-color: var(--success); color: #fff; }
+.wiz-step.current { color: var(--primary); font-weight: 600; background: var(--primary-soft); }
+.wiz-step.current .wiz-num { background: var(--primary); border-color: var(--primary); color: var(--primary-contrast); }
+.wiz-connector { width: 18px; height: 1px; background: var(--border); flex: none; }
+.wizard-footer {
+  display: flex; align-items: center; gap: 10px;
+  border-top: 1px solid var(--border); padding-top: 14px; margin-top: 6px;
+}
+.wizard-footer .autosave { color: var(--text-muted); font-size: 12px; }
+.wizard-footer .spacer { flex: 1; }
+
+/* ============================================================
+   8. FormPattern — labeled fields, validation, pre-fill
+   ============================================================ */
+.form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field.full { grid-column: 1 / -1; }
+.field label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+.field label .req { color: var(--danger); }
+.field input, .field select, .field textarea {
+  border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px);
+  padding: 9px 12px; background: var(--card-bg); min-height: 38px;
+}
+.field input:focus, .field select:focus, .field textarea:focus { outline: 2px solid var(--primary); border-color: transparent; }
+.field.prefilled input, .field.prefilled select { background: var(--primary-soft); border-color: color-mix(in srgb, var(--primary) 35%, var(--border)); }
+.field .hint { font-size: 12px; color: var(--text-muted); }
+.field.invalid input { border-color: var(--danger); }
+.field .error { font-size: 12px; color: var(--danger); }
+
+/* ============================================================
+   9. TodayListItem — who/what + room + time + one action
+   ============================================================ */
+.today-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: var(--pad-cell); border-bottom: 1px solid var(--border);
+}
+.today-item:last-child { border-bottom: none; }
+.today-item .ti-room {
+  min-width: 46px; text-align: center; font-weight: 700;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px); padding: 6px 4px; font-variant-numeric: tabular-nums;
+}
+.today-item .ti-main { flex: 1; min-width: 0; }
+.today-item .ti-who { font-weight: 600; }
+.today-item .ti-sub { font-size: 12px; color: var(--text-muted); }
+.today-item .ti-time { font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.today-item.done { opacity: .5; }
+.today-item.done .ti-who { text-decoration: line-through; }
+
+/* ============================================================
+   10. TaskCard — maid / technician
+   ============================================================ */
+.task-card { background: var(--card-bg); border: var(--card-border); border-radius: var(--radius); box-shadow: var(--card-shadow); padding: var(--pad-card); display: flex; flex-direction: column; gap: 10px; }
+.task-card .tc-head { display: flex; align-items: center; gap: 10px; }
+.task-card .tc-room { font-size: 20px; font-weight: 700; }
+.task-card .tc-check { display: flex; align-items: center; gap: 9px; padding: 6px 0; font-size: var(--fs-base); }
+.task-card .tc-check input { width: 20px; height: 20px; accent-color: var(--primary); }
+
+/* ============================================================
+   11. InvoiceBreakdownCard — units × rate + late fee + total
+   ============================================================ */
+.invoice-card { background: var(--card-bg); border: var(--card-border); border-radius: var(--radius); box-shadow: var(--card-shadow); padding: var(--pad-card); }
+.invoice-card .ic-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.invoice-card .ic-head h3 { font-size: 15px; flex: 1; }
+.ic-line { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px dashed var(--border); }
+.ic-line:last-of-type { border-bottom: none; }
+.ic-line .ic-desc { color: var(--text); }
+.ic-line .ic-calc { display: block; font-size: 12px; color: var(--text-muted); }
+.ic-line .ic-amt { font-variant-numeric: tabular-nums; font-weight: 500; white-space: nowrap; font-family: var(--font-mono); }
+.ic-line.ic-late .ic-amt, .ic-line.ic-late .ic-desc { color: var(--danger); font-weight: 600; }
+.ic-total { display: flex; justify-content: space-between; margin-top: 8px; padding-top: 10px; border-top: 2px solid var(--text); font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums; }
+.ic-total span:last-child { font-family: var(--font-mono); }
+
+/* ============================================================
+   12. FilterBar — chip filters + search
+   ============================================================ */
+.filter-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.chip {
+  border: 1px solid var(--border); background: var(--card-bg); color: var(--text-muted);
+  border-radius: 999px; padding: 5px 14px; font-size: 13px; font-weight: 500;
+}
+.chip.active { background: var(--primary); border-color: var(--primary); color: var(--primary-contrast); font-weight: 600; }
+.chip .chip-count { font-weight: 700; margin-left: 4px; }
+.filter-search {
+  margin-left: auto; border: 1px solid var(--border); border-radius: 999px;
+  padding: 6px 14px; min-width: 200px; background: var(--card-bg);
+}
+
+/* ============================================================
+   13. KPITile — number + label + optional link arrow
+   ============================================================ */
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: var(--gap); }
+.kpi-tile {
+  background: var(--card-bg); border: var(--card-border); border-radius: var(--radius);
+  box-shadow: var(--card-shadow); padding: var(--pad-card);
+  display: flex; flex-direction: column; gap: 3px; position: relative;
+  color: var(--text);
+  border-left: 3px solid var(--neutral);
+}
+.kpi-tile .kpi-num { font-family: var(--font-mono); font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.kpi-tile .kpi-num .kpi-unit { font-size: 14px; font-weight: 500; color: var(--text-muted); }
+.kpi-tile .kpi-label { font-size: 13px; color: var(--text-muted); }
+.kpi-tile .kpi-sub { font-size: 12px; color: var(--text-muted); }
+.kpi-tile .kpi-arrow { position: absolute; top: 12px; right: 14px; color: var(--text-muted); font-size: 14px; }
+a.kpi-tile:hover { outline: 2px solid var(--primary); }
+.kpi-tile.kpi-danger { border-left-color: var(--danger); }
+.kpi-tile.kpi-danger .kpi-num { color: var(--danger); }
+.kpi-tile.kpi-success { border-left-color: var(--success); }
+.kpi-tile.kpi-success .kpi-num { color: var(--success); }
+.kpi-tile.kpi-primary { border-left-color: var(--primary); }
+.kpi-tile.kpi-primary .kpi-num { color: var(--primary); }
+.kpi-tile.kpi-warning { border-left-color: var(--warning); }
+.kpi-tile.kpi-warning .kpi-num { color: var(--warning); }
+
+/* ============================================================
+   14. PhotoAttachment — capture / thumb / compare
+   ============================================================ */
+.photo-attach { display: flex; gap: 8px; flex-wrap: wrap; }
+.photo-thumb {
+  width: 72px; height: 72px; border-radius: calc(var(--radius) - 2px);
+  background: var(--surface); border: 1px solid var(--border);
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 22px; color: var(--text-muted); position: relative; overflow: hidden;
+}
+.photo-thumb .pt-tag {
+  position: absolute; bottom: 0; left: 0; right: 0;
+  font-size: 9px; text-align: center; background: rgba(15,23,42,.6); color: #fff; padding: 1px 0;
+}
+.photo-capture { border-style: dashed; background: none; cursor: pointer; }
+.photo-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.photo-compare .pc-pane { text-align: center; font-size: 11px; color: var(--text-muted); }
+.photo-compare .photo-thumb { width: 100%; height: 110px; }
+
+/* ============================================================
+   15. TimelineLog — who/what, before→after
+   ============================================================ */
+.timeline-log { display: flex; flex-direction: column; }
+.tl-item { display: flex; gap: 12px; padding: 8px 0; }
+.tl-item .tl-dot { width: 8px; height: 8px; border-radius: 999px; background: var(--neutral); margin-top: 6px; flex: none; }
+.tl-item.tl-danger .tl-dot { background: var(--danger); }
+.tl-item .tl-body { flex: 1; border-bottom: 1px dashed var(--border); padding-bottom: 8px; }
+.tl-item:last-child .tl-body { border-bottom: none; }
+.tl-item .tl-what { font-size: var(--fs-base); }
+.tl-item .tl-meta { font-size: 12px; color: var(--text-muted); }
+.tl-item .tl-diff { font-size: 12px; font-variant-numeric: tabular-nums; }
+.tl-item .tl-diff .before { text-decoration: line-through; color: var(--text-muted); }
+.tl-item .tl-diff .after { font-weight: 600; }
+
+/* ============================================================
+   16. NotificationItem — type icon + text + inline action
+   ============================================================ */
+.notification-item {
+  display: flex; align-items: center; gap: 11px;
+  padding: var(--pad-cell); border-bottom: 1px solid var(--border);
+}
+.notification-item:last-child { border-bottom: none; }
+.notification-item .ni-icon {
+  width: 34px; height: 34px; border-radius: 999px; flex: none;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 15px;
+}
+.ni-icon.ni-warning { background: var(--warning-soft); }
+.ni-icon.ni-danger { background: var(--danger-soft); }
+.ni-icon.ni-info { background: var(--info-soft); }
+.ni-icon.ni-success { background: var(--success-soft); }
+.notification-item .ni-main { flex: 1; min-width: 0; }
+.notification-item .ni-text { font-size: var(--fs-base); }
+.notification-item .ni-time { font-size: 11px; color: var(--text-muted); }
+
+/* ---------- Phone frame (worker / tenant screens) ---------- */
+.phone-stage { min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 30px 0; background: var(--surface); }
+.phone-frame {
+  width: 390px; min-height: 844px; background: var(--bg);
+  border-radius: 34px; border: 10px solid #0F172A;
+  overflow: hidden; display: flex; flex-direction: column;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, .25);
+}
+.phone-frame .phone-header {
+  background: var(--chrome-bg); color: var(--chrome-text);
+  padding: 14px 18px; display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--chrome-border);
+}
+.phone-frame .phone-body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+/* phone surfaces: touch targets ≥44px */
+.phone-frame .btn { min-height: 44px; }
+.phone-frame input, .phone-frame select { min-height: 44px; }
+
+/* ---------- Style switcher (demo tool, not part of the design) ---------- */
+.style-switcher {
+  position: fixed; bottom: 16px; right: 16px; z-index: 100;
+  display: flex; align-items: center; gap: 4px;
+  background: #0F172A; color: #94A3B8;
+  border-radius: 999px; padding: 5px 6px 5px 14px;
+  font-size: 12px; box-shadow: 0 4px 16px rgba(15, 23, 42, .35);
+  font-family: 'IBM Plex Sans Thai', sans-serif;
+}
+.style-switcher .ss-label { margin-right: 4px; }
+.style-switcher button {
+  width: 30px; height: 30px; border-radius: 999px; border: none;
+  background: transparent; color: #CBD5E1; font-weight: 700; font-size: 12px;
+}
+.style-switcher button.active { background: #F8FAFC; color: #0F172A; }
+
+.layout-switcher {
+  position: fixed; bottom: 16px; left: 16px; z-index: 100;
+  display: flex; align-items: center; gap: 4px;
+  background: #0F172A; color: #94A3B8;
+  border-radius: 999px; padding: 5px 6px 5px 14px;
+  font-size: 12px; box-shadow: 0 4px 16px rgba(15, 23, 42, .35);
+  font-family: 'IBM Plex Sans Thai', sans-serif;
+}
+.layout-switcher .ls-label { margin-right: 4px; white-space: nowrap; }
+.layout-switcher a {
+  width: 30px; height: 30px; border-radius: 999px;
+  display: flex; align-items: center; justify-content: center;
+  color: #CBD5E1; font-weight: 700; font-size: 12px; text-decoration: none;
+}
+.layout-switcher a.active { background: #F8FAFC; color: #0F172A; }
+.layout-switcher a.ls-picker-link { font-size: 14px; color: #64748B; }
+.layout-switcher a.ls-picker-link:hover { color: #F8FAFC; }
+
+/* ---------- Small utilities ---------- */
+.muted { color: var(--text-muted); }
+.money { font-variant-numeric: tabular-nums; font-family: var(--font-mono); }
+.danger-text { color: var(--danger); }
+.success-text { color: var(--success); }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); }
+.grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--gap); }
+.flex { display: flex; align-items: center; gap: 8px; }
+.section-title { font-size: 13px; font-weight: 600; color: var(--text-muted); }

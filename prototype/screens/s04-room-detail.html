@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S04 · รายละเอียดห้อง — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S04" data-title="รายละเอียดห้อง">
+<div class="page-content" id="page-content">
+
+  <div class="page-header-row">
+    <a class="btn btn-ghost btn-sm" href="s02-dashboard.html">← ผังห้อง</a>
+  </div>
+
+  <div id="room-body"></div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var qsAmp = qs.replace(/^\?/, '&');
+  var params = new URLSearchParams(qs);
+  var roomNo = params.get('room') || '105';
+  var r = D.room(roomNo) || D.rooms[0];
+
+  var body = document.getElementById('room-body');
+  var html = '';
+
+  function actionLink(href, label, cls) {
+    return '<a class="btn ' + (cls || 'btn-primary') + '" href="' + href + '">' + label + '</a>';
+  }
+  function actionBtn(id, label, cls) {
+    return '<button type="button" id="' + id + '" class="btn ' + (cls || 'btn-secondary') + '">' + label + '</button>';
+  }
+
+  var headCard = '<div class="card" style="display:flex; align-items:center; gap:14px;">' +
+    '<div style="font-size:26px; font-weight:700;">ห้อง ' + r.number + '</div>' +
+    '<span class="status-badge badge-neutral">' + (r.rentalType === 'monthly' ? 'รายเดือน' : 'รายวัน') + '</span>';
+
+  if (r.state === 'vacant') {
+    headCard += '<span class="status-badge badge-success">ว่าง</span></div>';
+    var flow = r.rentalType; // 'monthly' | 'daily'
+    var actionLabel = flow === 'monthly' ? 'เช็คอินผู้เช่า' : 'จองห้องใหม่';
+    html = headCard +
+      '<div class="card">' +
+        '<h3>ห้องนี้ว่างอยู่</h3>' +
+        '<p class="muted" style="margin-bottom:14px;">' + (flow === 'monthly' ? 'ห้องพักรายเดือน พร้อมรับผู้เช่าใหม่' : 'ห้องพักรายวัน พร้อมรับการจอง') + '</p>' +
+        actionLink('s05-tenant-lookup.html?flow=' + flow + '&room=' + r.number + qsAmp, actionLabel) +
+      '</div>';
+  } else if (r.state === 'reserved') {
+    headCard += '<span class="status-badge badge-warning">จองแล้ว</span></div>';
+    html = headCard +
+      '<div class="card" style="display:flex; flex-direction:column; gap:10px;">' +
+        '<h3>ข้อมูลผู้จอง</h3>' +
+        '<div class="tenant-chip daily"><span class="tc-name">' + r.occupant + '</span><span class="tc-phone">' + (r.phone || '') + '</span></div>' +
+        '<div class="grid-2">' +
+          '<div><div class="section-title">เช็คอิน</div><div>' + (r.checkIn || '-') + '</div></div>' +
+          '<div><div class="section-title">เช็คเอาท์</div><div>' + (r.checkOut || '-') + '</div></div>' +
+        '</div>' +
+        '<div><span class="section-title">ราคา/คืน</span> <span class="money">' + D.money(r.nightlyRate || r.defaultNightly) + '</span></div>' +
+      '</div>' +
+      '<div class="card" style="display:flex; gap:10px; flex-wrap:wrap;">' +
+        actionLink('s12-guest-registration.html?room=' + r.number + qsAmp, 'แขกมาถึงแล้ว') +
+        actionBtn('btn-cancel', 'ยกเลิกการจอง', 'btn-secondary') +
+        actionBtn('btn-noshow', 'ไม่มาตามนัด (No-show)', 'btn-danger') +
+      '</div>';
+  } else if (r.rentalType === 'monthly') {
+    headCard += '<span class="status-badge badge-info">มีผู้เช่า</span></div>';
+    var phone = r.phone || '08X-XXX-XXXX';
+    var startDate = r.startDate || '1 ม.ค. 69';
+    var deposit = r.deposit != null ? r.deposit : r.defaultRent;
+    var rent = r.rent || r.defaultRent;
+    html = headCard +
+      '<div class="card" style="display:flex; flex-direction:column; gap:10px;">' +
+        '<h3>ข้อมูลผู้เช่า</h3>' +
+        '<div class="tenant-chip monthly"><span class="tc-name">' + r.occupant + '</span><span class="tc-phone">' + phone + '</span></div>' +
+        '<div class="grid-3">' +
+          '<div><div class="section-title">วันที่เริ่มเช่า</div><div>' + startDate + '</div></div>' +
+          '<div><div class="section-title">ค่าเช่า/เดือน</div><div class="money">' + D.money(rent) + '</div></div>' +
+          '<div><div class="section-title">เงินประกัน</div><div class="money">' + D.money(deposit) + '</div></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="card" style="display:flex; gap:10px; flex-wrap:wrap;">' +
+        actionLink('s13-meter-reading.html?room=' + r.number + '&tenancy=' + (r.tenancyId || 'T-' + r.number) + qsAmp, 'จดมิเตอร์') +
+        actionLink('s18-invoice-list.html?room=' + r.number + qsAmp, 'ดูใบแจ้งหนี้', 'btn-secondary') +
+        actionBtn('btn-end-tenancy', 'สิ้นสุดสัญญา', 'btn-danger') +
+      '</div>';
+  } else {
+    headCard += '<span class="status-badge badge-info">มีผู้เข้าพัก</span></div>';
+    var gphone = r.phone || '08X-XXX-XXXX';
+    html = headCard +
+      '<div class="card" style="display:flex; flex-direction:column; gap:10px;">' +
+        '<h3>ข้อมูลผู้เข้าพัก</h3>' +
+        '<div class="tenant-chip daily"><span class="tc-name">' + r.occupant + '</span><span class="tc-phone">' + gphone + '</span></div>' +
+        '<div class="grid-2">' +
+          '<div><div class="section-title">เช็คอิน</div><div>' + (r.checkIn || '-') + '</div></div>' +
+          '<div><div class="section-title">เช็คเอาท์ (กำหนด)</div><div>' + (r.checkOut || '-') + '</div></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="card" style="display:flex; gap:10px; flex-wrap:wrap;">' +
+        actionBtn('btn-checkout', 'เช็คเอาท์', 'btn-primary') +
+      '</div>';
+  }
+
+  body.innerHTML = html;
+
+  function confirmThenGo(id, question, bannerMsg) {
+    var btn = document.getElementById(id);
+    if (!btn) return;
+    btn.addEventListener('click', function () {
+      if (!confirm(question)) return;
+      location.href = 's02-dashboard.html?banner=' + encodeURIComponent(bannerMsg) + qsAmp;
+    });
+  }
+  confirmThenGo('btn-end-tenancy', 'ยืนยันสิ้นสุดสัญญาห้อง ' + r.number + '?', 'สิ้นสุดสัญญาห้อง ' + r.number + ' แล้ว');
+  confirmThenGo('btn-checkout', 'ยืนยันเช็คเอาท์ห้อง ' + r.number + '?', 'เช็คเอาท์ห้อง ' + r.number + ' เรียบร้อยแล้ว');
+  confirmThenGo('btn-cancel', 'ยืนยันยกเลิกการจองห้อง ' + r.number + '?', 'ยกเลิกการจองห้อง ' + r.number + ' แล้ว');
+  confirmThenGo('btn-noshow', 'บันทึกว่าแขกไม่มาตามนัด? เงินที่ชำระไว้ (ถ้ามี) จะถูกริบ', 'บันทึกไม่มาตามนัด ห้อง ' + r.number + ' แล้ว');
+</script>
+</body>
+</html>

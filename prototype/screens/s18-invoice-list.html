@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S18 · รายการบิล — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S18" data-title="รายการบิล">
+<div class="page-content" id="page-content">
+
+  <div class="page-header-row">
+    <div class="filter-bar" id="filter-bar">
+      <button class="chip active" data-tab="all">ทั้งหมด</button>
+      <button class="chip" data-tab="unpaid">ค้างชำระ</button>
+      <button class="chip" data-tab="pending_verification">รอตรวจสอบ</button>
+      <button class="chip" data-tab="paid">ชำระแล้ว</button>
+      <button class="chip" data-tab="rejected">ถูกปฏิเสธ</button>
+    </div>
+    <div class="spacer"></div>
+    <a class="btn btn-primary" href="s16-invoice-confirmation.html">+ ออกใบแจ้งหนี้</a>
+    <a class="btn btn-secondary" href="s17-batch-summary.html">สร้างทั้งหมดที่พร้อม</a>
+  </div>
+
+  <div class="card" style="padding:0;">
+    <table class="data-table">
+      <thead>
+        <tr><th>เลขที่</th><th>ห้อง</th><th>ผู้เช่า</th><th>ยอดรวม</th><th>ครบกำหนด</th><th>สถานะ</th></tr>
+      </thead>
+      <tbody id="invoice-rows"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var qsAmp = qs.replace(/^\?/, '&');
+
+  var STATUS_LABEL = {
+    unpaid: ['ค้างชำระ', 'badge-danger'],
+    pending_verification: ['รอตรวจสอบ', 'badge-warning'],
+    paid: ['ชำระแล้ว', 'badge-success'],
+    rejected: ['ถูกปฏิเสธ', 'badge-neutral']
+  };
+
+  function render(filter) {
+    var rows = D.invoiceList.filter(function (i) { return filter === 'all' || i.status === filter; });
+    document.getElementById('invoice-rows').innerHTML = rows.map(function (i) {
+      var s = STATUS_LABEL[i.status];
+      return '<tr onclick="location.href=\'s19-invoice-detail.html?invoice=' + i.number + qsAmp.replace(/'/g, "\\'") + '\'">' +
+        '<td>#' + i.number + '</td><td>' + i.room + '</td><td class="td-muted">' + i.tenant + '</td>' +
+        '<td class="td-money">' + D.money(i.total) + '</td><td class="td-muted">' + i.dueDate + '</td>' +
+        '<td><span class="status-badge ' + s[1] + '">' + s[0] + '</span></td></tr>';
+    }).join('');
+  }
+  render('all');
+  Demo.bindTabs(document.getElementById('filter-bar'), render);
+</script>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S21 · รอตรวจสอบ — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S21" data-title="รอตรวจสอบ">
+<div class="page-content" id="page-content">
+
+  <div data-admin-only>
+    <div class="card" style="padding:0;">
+      <table class="data-table">
+        <thead>
+          <tr><th>เลขที่</th><th>ห้อง</th><th>ยอดเงิน</th><th>วิธีชำระ</th><th>ส่งโดย</th><th>รอมาแล้ว</th></tr>
+        </thead>
+        <tbody id="queue-rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card" id="no-access-card" style="display:none;">
+    <p>หน้านี้สำหรับผู้ดูแลระบบ (Admin) เท่านั้น</p>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var qsAmp = qs.replace(/^\?/, '&');
+
+  var METHOD_LABEL = { transfer: 'โอนเงิน', qr: 'QR พร้อมเพย์', cash: 'เงินสด' };
+
+  var pending = D.invoiceList
+    .filter(function (i) { return i.status === 'pending_verification'; })
+    .sort(function (a, b) { return (b.waitingDays || 0) - (a.waitingDays || 0); }); // oldest first
+
+  document.getElementById('queue-rows').innerHTML = pending.map(function (i) {
+    var waitClass = (i.waitingDays || 0) > 3 ? 'badge-danger' : 'badge-neutral';
+    return '<tr onclick="location.href=\'s22-verification-detail.html?invoice=' + i.number + qsAmp.replace(/'/g, "\\'") + '\'">' +
+      '<td>#' + i.number + '</td><td>' + i.room + '</td><td class="td-money">' + D.money(i.total) + '</td>' +
+      '<td>' + (METHOD_LABEL[i.method] || '-') + '</td><td class="td-muted">' + (i.submittedBy || '-') + '</td>' +
+      '<td><span class="status-badge ' + waitClass + '">' + (i.waitingDays || 0) + ' วัน</span></td></tr>';
+  }).join('') || '<tr><td colspan="6" class="td-muted">ไม่มีรายการรอตรวจสอบ</td></tr>';
+
+  if (window.AmanewRole && window.AmanewRole.current() !== 'admin') {
+    document.getElementById('no-access-card').style.display = 'block';
+  }
+</script>
+</body>
+</html>

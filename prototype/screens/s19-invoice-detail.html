@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S19 · รายละเอียดบิล — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S19" data-title="รายละเอียดบิล">
+<div class="page-content" id="page-content">
+
+  <a class="btn btn-ghost btn-sm" style="align-self:flex-start;" href="s18-invoice-list.html">← รายการบิล</a>
+
+  <div class="card" style="max-width:480px;">
+    <div class="invoice-card">
+      <div class="ic-head"><h3>ใบแจ้งหนี้ #<span id="inv-number"></span> — ห้อง <span id="inv-room"></span></h3>
+        <span class="status-badge" id="inv-status-badge"></span>
+      </div>
+      <div class="ic-line"><span class="ic-desc">ผู้เช่า</span><span class="ic-amt" id="inv-tenant"></span></div>
+      <div class="ic-line"><span class="ic-desc">ครบกำหนดชำระ</span><span class="ic-amt" id="inv-due"></span></div>
+      <div class="ic-line"><span class="ic-desc">ค่าเช่าห้อง</span><span class="ic-amt" id="inv-room-charge"></span></div>
+      <div class="ic-line" id="e-line" style="display:none;"><span class="ic-desc">ค่าไฟฟ้า<span class="ic-calc" id="e-calc"></span></span><span class="ic-amt" id="e-cost"></span></div>
+      <div class="ic-line" id="w-line" style="display:none;"><span class="ic-desc">ค่าน้ำ<span class="ic-calc" id="w-calc"></span></span><span class="ic-amt" id="w-cost"></span></div>
+      <div class="ic-line" id="utility-line"><span class="ic-desc">รวมค่าน้ำ-ไฟ</span><span class="ic-amt" id="inv-utility"></span></div>
+      <div class="ic-line ic-late"><span class="ic-desc" id="late-label">ค่าปรับล่าช้า</span><span class="ic-amt" id="inv-late"></span></div>
+      <div class="ic-total"><span>รวมทั้งสิ้น</span><span id="inv-total"></span></div>
+    </div>
+    <div class="mm-note" id="late-note"></div>
+  </div>
+
+  <div id="action-slot"></div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var qsAmp = qs.replace(/^\?/, '&');
+  var params = new URLSearchParams(qs);
+  var invNo = params.get('invoice') || '1042';
+  var inv = D.findInvoice(invNo);
+  if (params.get('justPaid') === '1') {
+    inv = Object.assign({}, inv, { status: 'pending_verification', submittedBy: 'คุณ (เพิ่งบันทึก)', lateFeeFrozen: inv.lateFeeFrozen || 0 });
+  }
+
+  var STATUS_LABEL = {
+    unpaid: ['ค้างชำระ', 'badge-danger'],
+    pending_verification: ['รอตรวจสอบ', 'badge-warning'],
+    paid: ['ชำระแล้ว', 'badge-success'],
+    rejected: ['ถูกปฏิเสธ', 'badge-neutral']
+  };
+
+  document.getElementById('inv-number').textContent = inv.number;
+  document.getElementById('inv-room').textContent = inv.room;
+  document.getElementById('inv-tenant').textContent = inv.tenant;
+  document.getElementById('inv-due').textContent = inv.dueDate;
+  document.getElementById('inv-room-charge').textContent = D.money(inv.roomCharge);
+  document.getElementById('inv-utility').textContent = D.money(inv.utilitySubtotal);
+  document.getElementById('inv-total').textContent = D.money(inv.total);
+  var s = STATUS_LABEL[inv.status];
+  document.getElementById('inv-status-badge').className = 'status-badge ' + s[1];
+  document.getElementById('inv-status-badge').textContent = s[0];
+
+  if (inv.electric && inv.water) {
+    document.getElementById('e-line').style.display = '';
+    document.getElementById('w-line').style.display = '';
+    document.getElementById('utility-line').style.display = 'none';
+    document.getElementById('e-calc').textContent = ' (' + inv.electric.units + ' หน่วย × ' + D.money(inv.electric.rate) + ')';
+    document.getElementById('e-cost').textContent = D.money(inv.electric.cost);
+    document.getElementById('w-calc').textContent = ' (' + inv.water.units + ' หน่วย × ' + D.money(inv.water.rate) + ')';
+    document.getElementById('w-cost').textContent = D.money(inv.water.cost);
+  }
+
+  if (inv.status === 'unpaid') {
+    document.getElementById('inv-late').textContent = D.money(0);
+    document.getElementById('late-label').textContent = 'ค่าปรับล่าช้า (คำนวณสด)';
+    document.getElementById('late-note').textContent = 'คำนวณใหม่ทุกวัน — ยังไม่เกินกำหนดชำระ';
+  } else {
+    var frozen = inv.lateFeeFrozen || 0;
+    document.getElementById('inv-late').textContent = D.money(frozen);
+    document.getElementById('late-label').textContent = 'ค่าปรับล่าช้า (ค่าคงที่)';
+    document.getElementById('late-note').textContent = 'ณ วันที่ชำระ — ค่านี้ถูกล็อกไว้แล้ว ไม่เปลี่ยนแปลงอีก';
+  }
+
+  var actions = '';
+  if (inv.status === 'unpaid') {
+    actions = '<a class="btn btn-primary" href="s20-payment-submission.html?invoice=' + inv.number + qsAmp + '">บันทึกการชำระเงิน</a>';
+  } else if (inv.status === 'rejected') {
+    actions = '<div class="demo-note">เหตุผลที่ถูกปฏิเสธ: ' + (inv.reason || '') + '</div>' +
+      '<a class="btn btn-primary" style="margin-top:8px;" href="s20-payment-submission.html?invoice=' + inv.number + qsAmp + '">ส่งการชำระเงินใหม่</a>';
+  } else if (inv.status === 'pending_verification') {
+    actions = '<div class="demo-note">ส่งโดย ' + (inv.submittedBy || '') + ' — รอผู้ดูแลระบบตรวจสอบ</div>';
+  }
+  document.getElementById('action-slot').innerHTML = actions;
+</script>
+</body>
+</html>
