@@ -1,3 +1,5 @@
+> **ARCHIVED (2026-07-31)** — superseded by `AMANEW_MASTER_DOCUMENT.md`, now the primary source of truth (see `CLAUDE.md`). Kept for historical reference; content below is not deleted, but do not treat it as authoritative where it conflicts with the Master Document. One known conflict already resolved in the Master Document's favor: the role model (this file's checkbox/7-preset model is the one that *won* — see Master Document §0/§16 correction notes).
+
 # Amanew Smart Management System — Functional Specification v1.0
 ## Part A — Business Rules
 ### Single source of truth · Discovery complete · Frozen

@@ -1,3 +1,5 @@
+> **ARCHIVED (2026-07-31)** — superseded by `AMANEW_MASTER_DOCUMENT.md`, now the primary source of truth (see `CLAUDE.md`). Kept for historical reference; its component library and style tokens were adopted into the Master Document (§15), but its 4-surface model (Management Web / Front Desk / Worker / Tenant) and screen numbering should be read against the Master Document's own Screen Inventory (§10) and reconciliation table (§15), not taken standalone.
+
 # Amanew — Design & Build Handoff v1.0
 ### For developers and Claude Code (Figma MCP) · Companion to `Amanew_Functional_Spec_v1.0.md`
 

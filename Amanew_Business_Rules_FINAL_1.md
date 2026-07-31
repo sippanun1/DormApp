@@ -1,4 +1,9 @@
+> **ARCHIVED (2026-07-31)** — superseded by `AMANEW_MASTER_DOCUMENT.md`, now the primary source of truth (see `CLAUDE.md`). Kept for historical reference; near-duplicate of `Page_Demo/Amanew_Functional_Spec_v1.0.md` Part A, missing that file's later Open Items/Parked Decisions sections.
+
 # Amanew Smart Management System — Business Rules (Canonical)
+
+> **Update note (2026-08-01):** this file is archived but still the rules reference. Rules **11.2, 11.3, 12.5, 15.x** changed by owner decision during the 2026-07-30/31 review sessions and are marked inline below. **4.8, 4.12, 10.3** are now built. The full list of what changed, and what it implies for schema and API, is in `AMANEW_MASTER_DOCUMENT.md` §17 (Phase 1 Scope Delta).
+
 ### Consolidated discovery output · Step 2 (Rules Freeze) · Merged final version
 
 **Status legend:**
@@ -68,11 +73,11 @@
 | 4.5 | Contract rent is **frozen for the life of the contract**. Rent changes only at renewal. No mid-contract rent edits exist. | ✅ ("ไม่เปลี่ยน") |
 | 4.6 | Room default rent (per room) is editable by the owner and applies to **future contracts only**. | 🟡 (consistent with 4.5) |
 | 4.7 | Staff with permission may override rent at contract creation (negotiated rent); override is logged in the audit log. | 🟡 |
-| 4.8 | Contract renewal = **a new contract** (new dates, possibly new rent; deposit carries over). No automatic month-to-month rollover. | ✅ ("ต่อสัญญาใหม่") |
+| 4.8 | Contract renewal = **a new contract** (new dates, possibly new rent; deposit carries over). No automatic month-to-month rollover. | ✅ · built 2026-07-31 (S35 ต่อสัญญา) |
 | 4.9 | Renewal alert fires 30 days before expiry (setting) to both staff and tenant; tenant can request renewal from their app (symmetric with move-out request). | 🟡 |
 | 4.10 | Occupants: one contract holder, additional occupants recorded (with vehicles) for registry purposes. | 🟡 |
 | 4.11 | **No extra charge for additional occupants** — 1 person and 2 people pay the same rent. Occupant count never affects billing. | ✅ ("3,500 = 3,500") |
-| 4.12 | **Early termination: security deposit is forfeited.** The commitment is the **stay duration agreed per tenant at signing** ("ตกลงกันก่อนว่าจะอยู่กี่เดือน") — agreed-months is a negotiated per-contract field, not a fixed template value. Leaving before the agreed duration forfeits the deposit. | ✅ |
+| 4.12 | **Early termination: security deposit is forfeited.** The commitment is the **stay duration agreed per tenant at signing** ("ตกลงกันก่อนว่าจะอยู่กี่เดือน") — agreed-months is a negotiated per-contract field, not a fixed template value. Leaving before the agreed duration forfeits the deposit. | ✅ · built 2026-07-31 (captured on S08, shown on S04/S33, enforced on S27) |
 | 4.14 | The building **cannot suspend a contract** — no suspension state exists. Contracts end by completion, early termination, or absconding only. | ✅ ("ไม่ได้") |
 | 4.13 | Contract document: system generates a printable/PDF contract auto-filled with tenant data, based on the owner's existing paper contract. Online signing out of Phase 1. | ❓ (need to see current contract — P3) |
 
@@ -167,7 +172,7 @@
 |---|------|--------|
 | 10.1 | Tenant cannot transfer rooms by themselves — they must **contact staff**. Manager/owner initiates. | ✅ |
 | 10.2 | Transfer keeps the **same contract** with a new room number. **Rent stays the same** ("คิดเท่าเดิม"). | ✅ |
-| 10.3 | Utilities on transfer: final meter on the old room, fresh start on the new room; that month's bill shows two utility line items (old room dates / new room dates). | 🟡 |
+| 10.3 | Utilities on transfer: final meter on the old room, fresh start on the new room; that month's bill shows two utility line items (old room dates / new room dates). | ✅ · built 2026-07-31 (S37 captures both readings; S19/S34 render the two periods on one invoice). Schema for it does not exist yet — see Master Document §17.2 |
 | 10.4 | Deposit carries over with the contract. | 🟡 |
 
 ---
@@ -177,8 +182,8 @@
 | # | Rule | Status |
 |---|------|--------|
 | 11.1 | Maintenance lifecycle: **Reported → Assigned → In Progress → Resolved.** No Verified/Closed states; no Waiting-Parts state — delays are recorded as notes. Timestamps on every transition. | 🟡 (Option B, agreed across reviews) |
-| 11.2 | Tickets can be created by: tenants (app), maids (from their task screen), reception, manager, owner. Assignment to technician: manager/owner. Technician sees **assigned tickets only** and logs parts + cost. | ✅/🟡 |
-| 11.3 | Repair costs logged on tickets are converted into cash-book expenses by staff with expense permission (single point of entry, no duplicates). | 🟡 |
+| 11.2 | Tickets can be created by: tenants (app), maids (from their task screen), reception, manager, owner. Assignment to technician: manager/owner. Technician sees **assigned tickets only**. ~~and logs parts + cost~~ — **superseded 2026-07-31 (owner): parts and cost are NOT tracked in the system at all.** Parts are bought outside it; the worker's screen (S30) carries no money field of any kind. | ✅ (assignment) / ❌ (parts+cost, owner-removed) |
+| 11.3 | ~~Repair costs logged on tickets are converted into cash-book expenses~~ — **no longer possible as written**: with 11.2's cost field removed, nothing captures a repair cost to convert. **Replacement path (2026-07-31): repair costs are entered directly in the cash book (S39)**, reached by a shortcut from the request that caused them (S42). Still a single point of entry, still permission-gated. | 🔁 (rewritten, owner decision) |
 | 11.4 | **Three cleaning types with different billing:** (a) checkout cleaning — automatic, free; (b) tenant-requested cleaning — **฿200/visit**, added to the next invoice; (c) move-out cleaning — **from ฿300**, deducted from deposit. The maid sees one unified task list; the system routes billing behind it. | ✅ |
 | 11.5 | Maid flow: task list on phone → checklist → photo → done → room flips to vacant-clean. Maids can report issues found while cleaning. | ✅ (matches customer spec) + 🟡 |
 | 11.6 | Room states kept minimal: vacant-clean, occupied, vacant-dirty, cleaning, maintenance, blocked/inactive. No Inspection or Transitioning states. | 🟡 |
@@ -193,7 +198,7 @@
 | 12.2 | Comments from tenants can be toggled on/off per post. | ✅ |
 | 12.3 | Staff can see **which rooms have read** a post (read receipts). | ✅ |
 | 12.4 | Post scheduling and post-editing rules: not in Phase 1. | 🟡 |
-| 12.5 | Notifications to tenants: in-app (Phase 1) → native app push (committed direction). LINE integration listed as an optional add-on, not core. | ✅ (user decision) |
+| 12.5 | Notifications to tenants: in-app (Phase 1) → native app push (committed direction). ~~LINE integration listed as an optional add-on, not core~~ → **LINE built in Phase 1 as a tenant opt-in channel (S38, 2026-07-31 owner request).** It stays a *copy*, never the record: in-app cannot be switched off (it is the proof the tenant was notified, per 6.13), and LINE messages carry amount + due date only — never slips or personal data. | ✅ built (scope raised from add-on) |
 
 ---
 
@@ -233,7 +238,7 @@
 | 15.7 | Occupancy & upcoming vacancies |
 | 15.8 | Reservation source breakdown |
 
-All 🟡 — our proposed Phase-1 list, to be confirmed with the owner in the proposal.
+**Status as of 2026-07-31:** four are built in the prototype (S40 รายงาน) — **15.2** ค้างชำระ (with live late fees and days overdue), **15.3** deposit liability (เงินประกัน and มัดจำกุญแจ shown separately, never merged), **15.6** income–expense monthly summary by category, **15.7** occupancy + contracts ending within 30 days. The remaining four — 15.1 daily summary, 15.4 per-staff cash reconciliation, 15.5 printable guest register, 15.8 reservation source breakdown — are still 🟡 and are named on the screen rather than silently omitted.
 
 ---
 

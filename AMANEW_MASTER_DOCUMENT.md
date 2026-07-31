@@ -24,6 +24,7 @@
 | 14 | Error Catalogue | Every error, its code, where it appears, and its recovery path | Building error handling; writing QA cases |
 | 15 | Design System Adoption | Which design system, which style, how design-prototype IDs map to architecture IDs | Starting any frontend implementation |
 | 16 | Phase Map | Every feature across all phases, with role assignments | Answering "is X in scope" or "when does Y happen" |
+| **17** | **Phase 1 Scope Delta (2026-08-01)** | **What the owner added after this document was frozen — 17 screens, their schema/API implications, and which rules changed** | **Before trusting §10's screen inventory, §4's schema, or §16's phase assignments — all three predate these additions** |
 
 **Open items requiring the owner (updated):**
 - §6.1 Hotel Act license status
@@ -55,7 +56,7 @@ This document is the single source of truth for the Amanew Smart Management Syst
 
 These are accepted as-is and are not re-litigated anywhere below unless a recommendation explicitly flags a critical conflict with one of them.
 
-- 3 roles only: **Admin, Staff, Worker**
+- Permissions are per-person checkboxes, not fixed roles — the named "roles" (Admin, Staff, Worker) are preset tick-combinations a person can be assigned, not hardcoded permission sets. *(Corrected 2026-07-31 — this line previously read "3 roles only: Admin, Staff, Worker," which conflicted with `Amanew_Functional_Spec_v1.0.md` §2's checkbox/7-preset model, CLAUDE.md rule #6, and the already-built S26 Staff & Permissions screen. Resolved in favor of the checkbox model per owner decision; see `PROGRESS.md` decisions log.)*
 - Rooms are strictly **Monthly** or **Daily** — no `rental_type = 'both'`
 - Modular Monolith architecture
 - Backend: Express + TypeScript
@@ -2280,7 +2281,7 @@ Complete assignment of every known feature to a phase, including items from the 
 | Booking status state machine (confirmed → checked_in → checked_out + cancelled/no_show) | — | Schema ready |
 | Invoice immutability + append-only audit tables | — | Schema ready |
 | Design system (tokens.css + components.css, A/B/C styles) | — | Adopted from design prototype |
-| 3 roles: Admin, Staff, Worker | — | Frozen |
+| Per-person permission checkboxes, 7 role presets (Admin/Staff/Worker + 4 others) | — | Frozen (corrected 2026-07-31, see §0 note above) |
 
 ## Phase 2 — Deferred, decision on record
 
@@ -2377,3 +2378,75 @@ Complete assignment of every known feature to a phase, including items from the 
 3. **Multi-branch dropdown placeholder** in the top bar. Single branch in Phase 1 ("Amanew Residence ศรีสะเกษ"), functional when multi-building scoping is added in Phase 2. Added now because the owner already operates multiple properties and expects to see the structure.
 4. **Mixed Thai/English labels adopted.** Navigation and action buttons in Thai; data-column headers and technical terms (Check-in, Occupancy Rate) in English where that's the word staff actually use. Replaces the strict "Thai first" rule, which was stricter than the owner's own reference system.
 **Consequences:** The wireflow's navigation references, the component library's C01 entry, the frontend spec's dashboard layout, and the Claude Code prompt all updated. No API or schema change — these are purely frontend layout and language decisions. The Quick Actions panel introduces navigation paths that bypass Room Detail (e.g. "New Check-in" goes straight to S05 without selecting a room first), which means S05 must handle the case where no room is pre-selected — the room selection happens inside the flow. This is a small but real UX branch that the current journey documents don't cover yet.
+
+
+════════════════════════════════════════════════════════════
+
+# SECTION 17: PHASE 1 SCOPE DELTA (2026-08-01)
+
+**Status: living.** Everything above this line was frozen before the owner's review sessions of 2026-07-30/31. Those sessions added 17 screens and changed several business rules. This section is the difference — nothing above has been rewritten, so the frozen reasoning stays intact and this section states plainly where it is now out of date.
+
+**Read this first if you are about to trust:** §10 (Screen Inventory, ends at S25), §4 (Schema, has no table for anything below), §5 (API, no endpoints for anything below), §6 (Frontend Spec, describes a 6-item sidebar; there are now 8), or §16 (Phase Map, files several of these as Phase 2).
+
+The authoritative screen list is `PROGRESS.md`. The authoritative built artefact is `/prototype/`.
+
+---
+
+## 17.1 Screens added after the freeze (S26–S42)
+
+| ID | Screen | Role | Why it exists |
+|---|---|---|---|
+| S26 | พนักงานและสิทธิ์ — staff & permissions | Admin | Per-person permission checkboxes (the model that governs; see §0 correction below) |
+| S27 | สรุปย้ายออก — checkout & deposit settlement | Admin, Staff | Rule 9.4 + floor-at-zero refund; replaced a `confirm()` stub |
+| S28 | หน้าวันนี้ — front desk / today | Admin, Staff | Arrivals, departures, pending verifications, **contracts expiring in 30 days** (Rule 4.9) |
+| S29 | งานของฉันวันนี้ — worker task list | Worker (phone) | Rule 11.5 maid/technician flow |
+| S30 | ส่งงาน — worker report | Worker (phone) | Status + photo + note. **No parts, no cost** — see 17.3 |
+| S31 | ปฏิทินรายวัน — daily calendar | Admin, Staff | Concept only; no per-day booking API exists in Phase 1 |
+| S32 | สอบถาม/จอง — inquiry form | Admin, Staff | Concept only; §15 flags this as undecided |
+| S33 | หน้าหลักผู้เช่า — tenant home | Tenant (phone) | Bill, contract panel, requests, notification settings |
+| S34 | บิลของฉัน — tenant bill detail | Tenant (phone) | Full breakdown + edit history (Rule 6.15, tenant-visible) |
+| S35 | ต่อสัญญา — contract renewal | Admin, Staff | Rule 4.8: renewal = a **new contract**, deposit carried over |
+| S36 | เข้าสู่ระบบ (มือถือ) — mobile login | Tenant, Worker | Phone + password; routes by account type. Staff/Admin stay on desktop S01 |
+| S37 | ย้ายห้อง — room transfer | Admin, Staff | Rules 10.1–10.4: same contract, same rent, deposit carried, two-period utilities |
+| S38 | การแจ้งเตือน — tenant notification settings | Tenant (phone) | In-app (forced) + **LINE opt-in**; per-event toggles |
+| S39 | บัญชีรายรับ-รายจ่าย — cash book | Admin | §13 in full; owner-only delete kept struck-through |
+| S40 | รายงาน — reports | Admin | 4 of the 8 reports in §15 (15.2, 15.3, 15.6, 15.7) |
+| S41 | ประกาศ — announcements | Admin, Staff | §12: targeting, channels, **read receipts per post** |
+| S42 | เรื่องที่แจ้งเข้ามา — requests inbox | Admin, Staff | The destination for tenant requests and worker reports; assignment creates the S29 task |
+
+**ID collisions resolved during the build** (Design IDs vs this document's Architecture IDs): Design "S22 staff permissions" → **S26**; Design "S25 today/front desk" → **S28**; Design "S05 daily calendar" → **S31**; Design "S06 inquiry" → **S32**. §15's mapping table predates these and does not include them.
+
+## 17.2 Schema and API implications (not yet written into §4/§5)
+
+Each of these is a Phase-1 feature with a screen already built against it. None has a table in §4 or an endpoint in §5.
+
+| Feature | Schema needed | Notes |
+|---|---|---|
+| Room type (แอร์/พัดลม) | `room_types` gains `default_rent`, `default_nightly`; `rooms.room_type_id` | Two independent axes: `rental_type` (monthly/daily) already exists and is unrelated. Per-room override columns optional |
+| Utility rates | Settings table or `utility_rates` (rate, effective_from) | Rates are **frozen into each invoice** at issue; changing the setting is never retroactive |
+| Agreed contract term | `tenancies.agreed_months INT NOT NULL`, `tenancies.end_date` derived | Rule 4.12 — what early termination is measured against. §4's `tenancies` has neither |
+| Renewal | New `tenancies` row linked via `previous_tenancy_id`; deposit carried, not re-collected | Rule 4.8 — never an UPDATE of the old row |
+| Room transfer | `tenancies.room_id` change + `tenancy_room_history` (append-only) | Rule 10.2: rent unchanged. Invoice needs **multiple utility periods per invoice** — the single electric/water pair in §4 cannot express it |
+| Cash book | `cash_entries` (kind, category, amount, date, method, description, receipt_url, recorded_by, deleted_at/by/reason) | Rule 13.4 — soft delete only, never a hard DELETE |
+| Announcements | `announcements` + `announcement_reads` (room_id, read_at) | Rule 12.3 read receipts |
+| Requests inbox | `requests` (room, type, sender, detail, status, assignee) linked to the task it creates | Lifecycle per Rule 11.1: reported → assigned → in_progress → resolved. **No verified/closed state** |
+| Notifications | `notification_prefs` (tenant_id, channel, event, enabled) + LINE link token | In-app is not a preference — it is always on (Rule 6.13) |
+
+## 17.3 Business rules whose status changed
+
+| Rule | Was | Now | Decided |
+|---|---|---|---|
+| 11.2 | Technician logs parts + cost | **Parts and cost are not tracked at all.** Bought outside the system | Owner, 2026-07-31 |
+| 11.3 | Repair costs convert into cash-book expenses automatically | **No automatic path.** Entered directly in the cash book (S39) | Consequence of 11.2 |
+| 12.5 | LINE = optional add-on, not core | **Built** as a tenant opt-in channel (S38). In-app remains the record; LINE carries amount + due date only, never slips or personal data | Owner, 2026-07-31 |
+| 15.x | 8 reports proposed, none built | **4 built** (15.2 defaulters, 15.3 deposit liability, 15.6 income–expense, 15.7 occupancy). 15.1/15.4/15.5/15.8 still open | Owner, 2026-07-31 |
+| 17 (rates) | Prototype used ฿7.50 / ฿18.00 | **฿9/unit electric · ฿25/unit water** — the customer's real tariff, matching §17 and CLAUDE.md all along | Owner, 2026-07-31 |
+| §0 roles | "3 roles only: Admin, Staff, Worker" | **Per-person permission checkboxes**; the role names are preset tick-combinations | Owner, 2026-07-31 (already corrected in §0) |
+
+## 17.4 Still not built, in the order recommended to the owner
+
+1. **Owner settings module (§17)** — 17 policies are specified as owner-editable; only room prices and utility rates (S24) exist. Due day, ฿50/day late fee, cleaning fees, key deposit, renewal lead time, invoice message are all still hardcoded. This is also where LINE channel configuration belongs.
+2. **Tenant directory (§14)** — current + past tenants, history, debt/abscond flags, vehicles. S05 finds a person only by exact phone.
+3. **Audit log viewer** — `audit_log` is an owner-only permission and every screen claims "บันทึกในประวัติ", but nothing reads it back.
+4. **Remaining reports (15.1, 15.4, 15.5, 15.8)** — daily summary, per-staff cash reconciliation, printable guest register, booking-source breakdown.
+5. **Tenant-side renewal request** (Rule 4.9's second half) and **two-period utilities on a real invoice model** — the S37 screen states the consequence; §4 cannot yet store it.

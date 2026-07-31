@@ -4,10 +4,10 @@ Property management system for one real customer: Amanew Residence, Sisaket (~60
 
 ## Read before doing anything
 
-- `Amanew_Functional_Spec_v1.0.md` — ALL business rules, entities, journeys, screen catalog (S01–S37), navigation. The single source of truth.
-- `Amanew_Design_Handoff_v1.0.md` — per-screen content requirements (§3), component library (§4), the 3 style directions with full tokens (§5), Thai string glossary (§6).
+- `AMANEW_MASTER_DOCUMENT.md` — the single source of truth (as of 2026-07-31). Business rules, entity model, schema, API, screen inventory (§10), wireflow, component library, state model, phase map — everything, consolidated.
+- `Amanew_Functional_Spec_v1.0.md` (`Page_Demo/`) and `Amanew_Design_Handoff_v1.0.md` — **archived**, superseded by the Master Document. Kept for historical reference only; where they conflict with the Master Document, the Master Document wins. `Amanew_Business_Rules_FINAL_1.md` is likewise archived (near-duplicate of the Functional Spec's Part A).
 
-If behavior isn't in the spec: **ask, don't invent.** Especially open items P3, D1–D3 (spec §19 / handoff §8).
+If behavior isn't in the Master Document: **ask, don't invent.** Open items are tracked in its own header (§0) and Phase Map (§16).
 
 ## Progress tracking (mandatory)
 
@@ -19,32 +19,33 @@ Static HTML pages in `/prototype/`, openable directly in a browser (double-click
 
 ```
 /prototype/
-  index.html            ← menu page linking to everything below
+  index.html            ← redirects to screens/s01-login.html
+  menu.html             ← full screen index with pre-filled demo query params
   tokens.css            ← ALL three style token sets as CSS variables
-  components.css        ← the 16 components, styled per token variables
-  style-a/dashboard.html   ← S02 in Style A "Clean Professional"
-  style-b/dashboard.html   ← S02 in Style B "Warm Thai"
-  style-c/dashboard.html   ← S02 in Style C "Bold Operator"
-  screens/              ← after owner picks: 17 demo screens in winning style
-    s03-room-grid.html
-    s07-move-in-wizard.html
-    ... (one file per demo screen, named s##-kebab-name.html)
+  components.css        ← the 16 components (frozen — new styles go in screens/shared.css)
+  switcher.js           ← the A/B/C style widget (no separate style-a|b|c folders exist)
+  screens/              ← every screen, one file per ID: s##-kebab-name.html
+    shared.css          ← supplementary styles components.css doesn't cover
+    data.js             ← the single demo dataset every screen reads
+    demo.js  role.js  nav.js
 ```
 
 ## Build order (mandatory)
 
-1. **`tokens.css`** — three `[data-style="a|b|c"]` scopes, each defining the same variable names (`--bg`, `--surface`, `--border`, `--primary`, `--primary-soft`, `--text`, `--text-muted`, `--radius`, `--shadow`, plus the 5 semantic status colors). Token values verbatim from handoff §5. Switching style = switching one attribute on `<body>`.
-2. **`components.css`** — the 16 components from handoff §4 (StatusBadge first — everything uses it), styled ONLY through token variables so they render correctly in all three styles. Class names = component names (`.status-badge`, `.room-card`, `.money-math-card`, `.meter-entry-row`, ...).
-3. **The 3 dashboards** — S02 built three times with **identical data** (60 rooms, 47 occupied, 5 overdue, today's arrivals, income tiles). Only `data-style` differs. This is the owner's choice page; label each: A "เรียบ มืออาชีพ" · B "อบอุ่น ใช้ง่าย" · C "ทันสมัย จริงจัง".
-4. **STOP.** Do not build past the style samples until told which style won. (Likely outcome per handoff: A or C for management, B for tenant/worker phone screens — hybrid is acceptable.)
-5. **The 17 demo screens** in the winning style, content per handoff §3 table, assembled from components.css — no per-screen one-off CSS unless truly unique. Link screens together with plain `<a>` hrefs following the demo journeys (S25→S26, S09→S10→S13, S06→S07) so the owner can click through.
+**Steps 1–4 below are complete and the style question is settled** (Style A, with the A/B/C switcher kept live on every screen so the owner can still compare). The original brief's 17-screen scope is also long superseded: the owner has repeatedly extended it in review sessions and the build is now **36 screens, S01–S42**. Treat the list in `PROGRESS.md` as the authoritative inventory, not any number written in a spec.
+
+1. ~~`tokens.css`~~ — done: three `[data-style="a|b|c"]` scopes, same variable names in each. Switching style = switching one attribute on `<body>`.
+2. ~~`components.css`~~ — done and **frozen**: the 16 components from handoff §4, styled only through token variables. Add new styles to `screens/shared.css` instead; never edit `components.css`.
+3. ~~The 3 dashboards~~ — done, then folded into the live switcher widget.
+4. ~~STOP for the style decision~~ — resolved.
+5. **Ongoing:** new screens are assembled from `components.css` + `shared.css`, read their data from `screens/data.js`, and link together with plain `<a>` hrefs that carry `location.search` through (the demo's role, style, banner and transfer state all ride in the query string — see PROGRESS.md for why).
 
 ## Prototype rules
 
 - **Static first.** Plain HTML/CSS. Tiny vanilla JS allowed only where the demo needs it (wizard station switching, drawer open/close, tab switching, the live late-fee clock on S27). No React, no build tools, no localStorage.
-- **Realistic Thai data everywhere** — names (คุณสมชาย, คุณมาลี), rooms 101–120/201–220/301–320, real amounts (฿3,500 rent, ฿9/฿25 rates, ฿50 fees). Use the wireframe data from the handoff §3 descriptions.
+- **Realistic Thai data everywhere** — names (คุณสมชาย, คุณมาลี), **60 rooms across 4 floors: 101–115 / 201–215 / 301–315 / 401–415** (an earlier draft of this file said 3 floors of 20; the build brief's 4×15 won and every screen assumes it), real amounts (฿3,500 fan / ฿4,500 aircon rent, **฿9/unit electric · ฿25/unit water**, ฿50/day late fee). All of it lives in `screens/data.js` — never hardcode a room number or amount into a screen.
 - **S03 hard requirement:** all ~60 rooms visible without scrolling at 1366×768.
-- Desktop screens target 1366–1440px wide; phone screens (S26 optional, S29/S30, S33/S34) render inside a 390px phone frame centered on the page.
+- Desktop screens target 1366–1440px wide; phone screens (S29/S30 worker, S33/S34/S36/S38 tenant) render inside a 390px phone frame centered on the page. Touch targets on those are ≥44px, and primary actions are 52px buttons — never checkboxes.
 - Every page header shows its screen ID (small, corner: "S03 · ผังห้อง") — reviewers reference IDs, never "the booking page."
 - Google Fonts via CDN link: IBM Plex Sans Thai (A), Prompt + Sarabun (B), Noto Sans Thai (C).
 
@@ -60,6 +61,11 @@ Static HTML pages in `/prototype/`, openable directly in a browser (double-click
 8. **No-show is a manual staff action** with forfeit of whatever was paid (often ฿0) — never an automatic timer.
 9. **Meter chain:** previous auto-filled + locked, current < previous rejected (rollover exception), broken meter → "ประมาณการ" flag, fresh reading at move-in.
 10. **Room states fixed enum:** vacant-clean / occupied / vacant-dirty / cleaning / maintenance / blocked — S03 legend uses exactly these.
+11. **Two independent room axes, never merged:** *rental type* (รายเดือน / รายวัน) decides which flow staff start; *room type* (❄ ห้องแอร์ / 🌀 ห้องพัดลม) decides price only. Standard prices live in S24 and nowhere else — no screen lets a price be typed from scratch, only overridden with a visible flag.
+12. **Agreed stay duration is captured at signing** ("ตกลงอยู่กี่เดือน", Rule 4.12) and is what early termination is measured against. Renewal (Rule 4.8) is a *new contract* — never an extension — with the deposit carried over.
+13. **Room transfer keeps the same contract:** new room number, **same rent** even into a pricier room type, deposit carried, and the transfer month bills utilities in two periods on one invoice (Rules 10.1–10.4).
+14. **Worker screens carry no money and no parts.** Owner decision 2026-07-31 overrides Business Rule 11.2/11.3: parts are bought outside the system and are not tracked in it. Repair costs are entered directly in the cash book (S39).
+15. **LINE is an optional copy, never the record.** In-app notification cannot be switched off (Rule 6.13 makes it the proof a tenant was told); LINE carries amount and due date only — never slips or personal data.
 
 ## Conventions
 
@@ -71,4 +77,4 @@ Static HTML pages in `/prototype/`, openable directly in a browser (double-click
 
 ## Code phase (activate when implementation starts — not now)
 
-Stack per handoff §7: Next.js 14 + Tailwind + shadcn/ui / Express + TS / Supabase. The HTML prototype's tokens.css and component classes map 1:1 to the future Tailwind theme and shadcn component styling — build the prototype knowing it becomes the styling reference. `amanew-schema.sql` is a DRAFT predating Spec v1.0 — revalidate every table against the spec before migrating. Overdue computed on read; no cron for money. Update this file with commands and env notes when the repo goes live; keep operational content under one page — specs stay in their own files.
+Stack per Master Document §5-6: Next.js 14 + Tailwind + shadcn/ui / Express + TS / Supabase. The HTML prototype's tokens.css and component classes map 1:1 to the future Tailwind theme and shadcn component styling — build the prototype knowing it becomes the styling reference. The Postgres schema lives in the Master Document §4 — no standalone `amanew-schema.sql` file exists in this repo yet; when one is created, revalidate every table against the Master Document first. Overdue computed on read; no cron for money. Update this file with commands and env notes when the repo goes live; keep operational content under one page — specs stay in their own files.
