@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S42 · เรื่องที่แจ้งเข้ามา — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .req-card { border: 1px solid var(--border); border-left: 4px solid var(--border); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .req-card.is-new { border-left-color: var(--danger); background: var(--card-bg); }
+  .req-card.is-assigned { border-left-color: var(--info); }
+  .req-card.is-progress { border-left-color: var(--warning); }
+  .req-card.is-resolved { border-left-color: var(--success); opacity: .7; }
+  .req-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .req-head .req-room { font-family: var(--font-mono); font-weight: 700; font-size: 18px; }
+  .req-detail { font-size: 13px; }
+  .req-meta { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--text-muted); }
+  .req-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .waited-long { color: var(--danger); font-weight: 600; }
+</style>
+</head>
+<body data-style="a" data-screen="S42" data-title="เรื่องที่แจ้งเข้ามา">
+<div class="page-content" id="page-content">
+
+  <div id="inbox-wrap">
+    <div class="card">
+      <div class="page-header-row">
+        <div>
+          <h3 style="margin:0;">เรื่องที่แจ้งเข้ามา</h3>
+          <p class="muted" style="font-size:12px; margin-top:4px;">
+            ทุกอย่างที่ผู้เช่าและช่างส่งเข้ามารวมอยู่ที่นี่ — แจ้งซ่อม · แจ้งทำความสะอาด · แจ้งย้ายออก · ช่างแจ้งติดปัญหา
+          </p>
+        </div>
+        <div class="spacer"></div>
+        <div class="kpi-tile kpi-warning" style="min-width:150px;">
+          <div class="kpi-num" id="open-count"></div><div class="kpi-label">ยังไม่เสร็จ</div>
+        </div>
+      </div>
+
+      <div class="settings-filters" style="margin-top:14px;">
+        <div class="sf-group">
+          <span class="sf-label">สถานะ</span>
+          <div class="floor-jump" id="f-status">
+            <button type="button" data-v="open" class="active">ยังไม่เสร็จ</button>
+            <button type="button" data-v="reported">ใหม่</button>
+            <button type="button" data-v="all">ทั้งหมด</button>
+          </div>
+        </div>
+        <div class="sf-group">
+          <span class="sf-label">ประเภท</span>
+          <div class="floor-jump" id="f-type">
+            <button type="button" data-v="all" class="active">ทั้งหมด</button>
+            <button type="button" data-v="repair">🔧 ซ่อม</button>
+            <button type="button" data-v="cleaning">🧹 ทำความสะอาด</button>
+            <button type="button" data-v="moveout">📦 ย้ายออก</button>
+            <button type="button" data-v="worker_issue">⚠ ช่างติดปัญหา</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="req-list" style="display:flex; flex-direction:column; gap:12px;"></div>
+  </div>
+
+  <div class="card" id="no-access-card" style="display:none;">
+    <p>หน้านี้สำหรับเจ้าของและพนักงานสำนักงานเท่านั้น — ช่าง/แม่บ้านดูงานของตัวเองได้ที่หน้างานบนมือถือ (S29)</p>
+  </div>
+
+</div>
+
+<!-- Assign to a worker: this is what actually creates the task on S29 (Rule 11.2 —
+     assignment to a technician is the manager/owner's action, not the worker's). -->
+<div class="modal-overlay" id="assign-modal" aria-hidden="true">
+  <div class="modal-box">
+    <h2>มอบหมายงาน</h2>
+    <div class="dialog-what" id="assign-what"></div>
+    <div class="field full">
+      <label>มอบหมายให้ <span class="req">*</span></label>
+      <select id="assign-to"></select>
+    </div>
+    <div class="field full">
+      <label>กำหนดเสร็จ</label>
+      <select id="assign-due">
+        <option value="วันนี้ 15:00">วันนี้ 15:00</option>
+        <option value="วันนี้ 17:00">วันนี้ 17:00</option>
+        <option value="พรุ่งนี้ 09:00">พรุ่งนี้ 09:00</option>
+        <option value="พรุ่งนี้ 13:00">พรุ่งนี้ 13:00</option>
+      </select>
+    </div>
+    <div class="rule-note">งานจะไปโผล่ในหน้า "งานของฉันวันนี้" ของผู้รับมอบหมายทันที — ช่างจะเห็นเฉพาะห้องและงาน ไม่เห็นชื่อผู้เช่าหรือเงิน</div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="assign-cancel">ยกเลิก</button>
+      <button type="button" class="btn btn-primary" id="assign-confirm">มอบหมาย</button>
+    </div>
+  </div>
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var qsAmp = qs.replace(/^\?/, '&');
+  var role = window.AmanewRole ? window.AmanewRole.current() : 'admin';
+  var filters = { status: 'open', type: 'all' };
+  var assigning = null;
+
+  var WORKERS = D.staff.filter(function (st) {
+    return st.roles.indexOf('housekeeping') !== -1 || st.roles.indexOf('technician') !== -1;
+  });
+  document.getElementById('assign-to').innerHTML = WORKERS.map(function (w) {
+    return '<option value="' + w.name + '">' + w.name + '</option>';
+  }).join('');
+
+  var STATUS_CLASS = { reported: 'is-new', assigned: 'is-assigned', in_progress: 'is-progress', resolved: 'is-resolved' };
+
+  function visible() {
+    return D.requests.filter(function (r) {
+      var okStatus = filters.status === 'all' ||
+        (filters.status === 'open' ? r.status !== 'resolved' : r.status === filters.status);
+      return okStatus && (filters.type === 'all' || r.type === filters.type);
+    });
+  }
+
+  function waited(r) {
+    if (r.status === 'resolved') return 'ปิดเรื่องแล้ว';
+    var txt = r.waitH < 24 ? 'รอมา ' + r.waitH + ' ชม.' : 'รอมา ' + Math.round(r.waitH / 24) + ' วัน';
+    return r.waitH >= 24 ? '<span class="waited-long">' + txt + '</span>' : txt;
+  }
+
+  function render() {
+    var list = visible();
+    document.getElementById('open-count').textContent = D.openRequestCount();
+    document.getElementById('req-list').innerHTML = list.length ? list.map(function (r) {
+      var t = D.REQUEST_TYPES[r.type];
+      var st = D.REQUEST_STATUS[r.status];
+      // What to do next depends on the type: repairs/cleaning become worker tasks,
+      // a move-out notice goes to the checkout screen, a blocked job needs a decision.
+      var actions = '';
+      if (r.status === 'resolved') {
+        actions = '<span class="muted" style="font-size:12px;">ปิดเรื่องแล้ว โดย ' + (r.assignee || '—') + '</span>';
+      } else if (r.type === 'moveout') {
+        actions = '<a class="btn btn-primary btn-sm" href="s27-checkout-summary.html?room=' + r.room + qsAmp + '">เปิดสรุปย้ายออก</a>' +
+          '<button type="button" class="btn btn-secondary btn-sm" data-resolve="' + r.id + '">ปิดเรื่อง (คุยกับผู้เช่าแล้ว)</button>';
+      } else if (r.type === 'worker_issue') {
+        actions = '<a class="btn btn-secondary btn-sm" href="s39-cash-book.html' + qs + '">บันทึกค่าอะไหล่เป็นรายจ่าย</a>' +
+          '<button type="button" class="btn btn-primary btn-sm" data-assign="' + r.id + '">มอบหมายใหม่</button>' +
+          '<button type="button" class="btn btn-secondary btn-sm" data-resolve="' + r.id + '">ปิดเรื่อง</button>';
+      } else if (r.status === 'reported') {
+        actions = '<button type="button" class="btn btn-primary btn-sm" data-assign="' + r.id + '">มอบหมายให้ช่าง/แม่บ้าน</button>';
+      } else {
+        actions = '<span class="muted" style="font-size:12px;">มอบหมายให้ ' + r.assignee + ' แล้ว</span>' +
+          '<button type="button" class="btn btn-secondary btn-sm" data-assign="' + r.id + '">เปลี่ยนผู้รับผิดชอบ</button>' +
+          '<button type="button" class="btn btn-secondary btn-sm" data-resolve="' + r.id + '">ปิดเรื่อง</button>';
+      }
+      return '<div class="card req-card ' + STATUS_CLASS[r.status] + '">' +
+        '<div class="req-head">' +
+          '<span class="req-room">' + r.room + '</span>' +
+          '<span class="status-badge ' + t.badge + '">' + t.icon + ' ' + t.label + '</span>' +
+          '<span class="status-badge ' + st.badge + '">' + st.label + '</span>' +
+          '<div class="spacer" style="flex:1;"></div>' +
+          '<span style="font-size:12px;">' + waited(r) + '</span>' +
+        '</div>' +
+        '<div class="req-detail">' + r.detail + '</div>' +
+        '<div class="req-meta">' +
+          '<span>จาก ' + r.from + (r.fromRole === 'tenant' ? ' (ผู้เช่า)' : r.fromRole === 'worker' ? ' (ช่าง)' : '') + '</span>' +
+          '<span>' + r.at + '</span>' +
+          '<span><a href="s04-room-detail.html?room=' + r.room + qsAmp + '">ดูห้อง ' + r.room + '</a></span>' +
+        '</div>' +
+        '<div class="req-actions">' + actions + '</div>' +
+      '</div>';
+    }).join('') : '<div class="card"><p class="muted" style="margin:0;">ไม่มีเรื่องในหมวดนี้</p></div>';
+
+    document.querySelectorAll('[data-assign]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        assigning = D.requests.filter(function (r) { return r.id === btn.dataset.assign; })[0];
+        var t = D.REQUEST_TYPES[assigning.type];
+        document.getElementById('assign-what').textContent = 'ห้อง ' + assigning.room + ' · ' + t.label + ' — ' + assigning.detail;
+        Demo.openDialog('assign-modal', btn);
+      });
+    });
+    document.querySelectorAll('[data-resolve]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var r = D.requests.filter(function (x) { return x.id === btn.dataset.resolve; })[0];
+        r.status = 'resolved';
+        render();
+      });
+    });
+  }
+
+  document.getElementById('assign-cancel').addEventListener('click', function () { Demo.closeDialog('assign-modal'); });
+  document.getElementById('assign-confirm').addEventListener('click', function () {
+    var who = document.getElementById('assign-to').value;
+    var due = document.getElementById('assign-due').value;
+    assigning.status = 'assigned';
+    assigning.assignee = who;
+    // Assignment is what puts the job on the worker's phone (S29).
+    var t = D.REQUEST_TYPES[assigning.type];
+    if (t.makesTask) {
+      D.workerTasks.unshift({
+        id: 'WT-' + (D.workerTasks.length + 1), room: assigning.room, type: t.makesTask,
+        label: assigning.detail, due: due, done: false, fromRequest: assigning.id
+      });
+    }
+    Demo.closeDialog('assign-modal');
+    render();
+    var pc = document.getElementById('page-content');
+    var old = pc.querySelector('.success-banner');
+    if (old) old.remove();
+    var banner = document.createElement('div');
+    banner.className = 'success-banner';
+    banner.innerHTML = '✓ มอบหมายห้อง ' + assigning.room + ' ให้ ' + who + ' แล้ว — ' +
+      (t.makesTask ? 'งานขึ้นในหน้างานของ ' + who + ' ทันที' : 'ไม่ได้สร้างงานให้ช่าง (เรื่องนี้สำนักงานจัดการเอง)');
+    pc.insertBefore(banner, pc.firstChild);
+  });
+
+  function bindFilter(id, key) {
+    document.getElementById(id).addEventListener('click', function (e) {
+      var btn = e.target.closest('button[data-v]');
+      if (!btn) return;
+      document.querySelectorAll('#' + id + ' button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+      filters[key] = btn.dataset.v;
+      render();
+    });
+  }
+  bindFilter('f-status', 'status');
+  bindFilter('f-type', 'type');
+
+  render();
+
+  if (role === 'worker') {
+    document.getElementById('inbox-wrap').style.display = 'none';
+    document.getElementById('no-access-card').style.display = 'block';
+  }
+</script>
+</body>
+</html>

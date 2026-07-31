@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S30 · ส่งงาน — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .tc-label { font-weight: 600; font-size: 15px; }
+  .tc-due { font-size: 13px; color: var(--text-muted); }
+  .photo-slot { border: 1.5px dashed var(--border); border-radius: var(--radius); padding: 28px 16px; text-align: center; color: var(--text-muted); font-size: 14px; min-height: 88px; }
+  /* Status choice as big tap-cards, not a dropdown — one thumb, outdoors. */
+  .status-choice { display: flex; flex-direction: column; gap: 8px; }
+  .status-choice button {
+    min-height: 56px; text-align: left; padding: 10px 14px; font-size: 15px; font-weight: 600;
+    border: 1.5px solid var(--border); border-radius: var(--radius); background: var(--card-bg); color: var(--text);
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .status-choice button .sc-sub { font-size: 12px; font-weight: 400; color: var(--text-muted); }
+  .status-choice button.picked { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+  .status-choice button.picked .sc-sub { color: var(--primary); }
+</style>
+</head>
+<body data-style="a">
+<div class="phone-stage">
+  <div class="phone-frame">
+    <div class="phone-header">
+      <a class="btn btn-ghost btn-sm" href="s29-worker-tasks.html">←</a>
+      <span class="user-chip"><span class="avatar">ซ</span><span>ฝ่ายซ่อมบำรุง (Worker)</span></span>
+      <div class="spacer" style="flex:1;"></div>
+      <span class="screen-id">S30 · ส่งงาน</span>
+    </div>
+    <div class="phone-body">
+      <div class="task-card" id="task-card"></div>
+
+      <!-- Worker reports, staff acts on it. No parts, no cost, no money of any
+           kind on this screen: parts are bought outside the system and are not
+           tracked here (owner decision 2026-07-31, overriding Business Rule
+           11.2's "technician logs parts + cost"). -->
+      <div>
+        <div class="section-title" style="margin-bottom:8px;">สถานะงาน</div>
+        <div class="status-choice" id="status-choice">
+          <button type="button" data-status="done" class="picked">✓ ทำเสร็จแล้ว<span class="sc-sub">งานเรียบร้อย ส่งให้ผู้ดูแลรับทราบ</span></button>
+          <button type="button" data-status="progress">⏳ กำลังทำอยู่<span class="sc-sub">ยังไม่เสร็จวันนี้ ทำต่อพรุ่งนี้</span></button>
+          <button type="button" data-status="blocked">⚠ ติดปัญหา ทำไม่ได้<span class="sc-sub">เช่น เข้าห้องไม่ได้ ต้องรอช่างข้างนอก</span></button>
+        </div>
+      </div>
+
+      <div class="photo-slot" id="photo-slot">📷 แตะเพื่อถ่ายรูป (ก่อน/หลัง)</div>
+
+      <div class="field full">
+        <label>บันทึกถึงผู้ดูแล</label>
+        <input type="text" id="task-note" placeholder="เช่น เข้าห้องไม่ได้ ผู้เช่าไม่อยู่ / ต้องซื้ออะไหล่เพิ่ม">
+        <div class="hint" id="note-hint"></div>
+      </div>
+
+      <button type="button" class="btn btn-primary" id="btn-send" style="width:100%; min-height:52px; font-size:16px;">ส่งรายงาน</button>
+      <div class="demo-note">
+        หน้านี้สำหรับ<strong>ช่าง/แม่บ้าน</strong> — ส่งรายงานอย่างเดียว เหมือนที่ผู้เช่าแจ้งเรื่องเข้ามา
+        ไม่เห็นชื่อผู้เช่า ไม่เห็นข้อมูลการเงิน และไม่ต้องกรอกค่าอะไหล่ใดๆ
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script>
+  var D = window.AmanewData;
+  var params = new URLSearchParams(location.search);
+  var taskId = params.get('task') || (D.workerTasks[0] && D.workerTasks[0].id);
+  var task = D.workerTasks.filter(function (t) { return t.id === taskId; })[0] || D.workerTasks[0];
+
+  var TYPE_LABEL = { cleaning: ['ทำความสะอาด', 'badge-info'], repair: ['แจ้งซ่อม', 'badge-warning'] };
+  var tl = TYPE_LABEL[task.type];
+
+  document.getElementById('task-card').innerHTML =
+    '<div class="tc-head"><span class="tc-room">' + task.room + '</span>' +
+    '<span class="status-badge sm ' + tl[1] + '">' + tl[0] + '</span></div>' +
+    '<div class="tc-label">' + task.label + '</div>' +
+    '<div class="tc-due">กำหนด: ' + task.due + '</div>';
+
+  var status = 'done';
+  var HINTS = {
+    done: 'ไม่บังคับ',
+    progress: 'ไม่บังคับ — บอกสั้นๆ ว่าเหลืออะไร',
+    blocked: 'กรุณาบอกสาเหตุ เพื่อให้ผู้ดูแลจัดการต่อได้'
+  };
+  var SEND_LABEL = { done: 'ส่งรายงาน — เสร็จแล้ว', progress: 'ส่งรายงาน — กำลังทำ', blocked: 'ส่งรายงาน — ติดปัญหา' };
+
+  function renderStatus() {
+    document.querySelectorAll('#status-choice button').forEach(function (b) {
+      b.classList.toggle('picked', b.dataset.status === status);
+    });
+    document.getElementById('note-hint').textContent = HINTS[status];
+    document.getElementById('btn-send').textContent = SEND_LABEL[status];
+  }
+  document.getElementById('status-choice').addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-status]');
+    if (!btn) return;
+    status = btn.dataset.status;
+    renderStatus();
+  });
+  renderStatus();
+
+  document.getElementById('photo-slot').addEventListener('click', function () {
+    this.textContent = '✓ แนบรูปแล้ว (สาธิต)';
+    this.style.borderStyle = 'solid';
+    this.style.color = 'var(--success)';
+  });
+
+  document.getElementById('btn-send').addEventListener('click', function () {
+    // Only "done" closes the task; the other two leave it open for staff to act on.
+    task.done = (status === 'done');
+    task.report = { status: status, note: document.getElementById('task-note').value };
+    location.href = 's29-worker-tasks.html';
+  });
+</script>
+</body>
+</html>

@@ -25,15 +25,46 @@
       <div class="ic-line"><span class="ic-desc">ค่าเช่าห้อง</span><span class="ic-amt" id="inv-room-charge"></span></div>
       <div class="ic-line" id="e-line" style="display:none;"><span class="ic-desc">ค่าไฟฟ้า<span class="ic-calc" id="e-calc"></span></span><span class="ic-amt" id="e-cost"></span></div>
       <div class="ic-line" id="w-line" style="display:none;"><span class="ic-desc">ค่าน้ำ<span class="ic-calc" id="w-calc"></span></span><span class="ic-amt" id="w-cost"></span></div>
+      <div id="util-periods"></div>
       <div class="ic-line" id="utility-line"><span class="ic-desc">รวมค่าน้ำ-ไฟ</span><span class="ic-amt" id="inv-utility"></span></div>
+      <div id="extra-items-slot"></div>
       <div class="ic-line ic-late"><span class="ic-desc" id="late-label">ค่าปรับล่าช้า</span><span class="ic-amt" id="inv-late"></span></div>
       <div class="ic-total"><span>รวมทั้งสิ้น</span><span id="inv-total"></span></div>
     </div>
     <div class="mm-note" id="late-note"></div>
   </div>
 
-  <div id="action-slot"></div>
+  <div id="edit-history-card" class="card" style="max-width:480px; display:none;">
+    <h3 style="font-size:14px;">ประวัติแก้ไขบิล</h3>
+    <div id="edit-history-rows"></div>
+  </div>
 
+  <div id="action-slot"></div>
+  <div id="edit-slot" style="max-width:480px;"></div>
+
+</div>
+
+<!-- Edit-bill modal — adds a one-time line item (charge or discount), per Business Rule 6.5/6.15.
+     Line items only, never a partial-payment input (CLAUDE.md rule #1); every save writes a
+     visible edit-history row (rule #7) instead of silently changing the total. -->
+<div class="modal-overlay" id="edit-modal" aria-hidden="true">
+  <div class="modal-box">
+    <h2>เพิ่มรายการในบิล</h2>
+    <div class="field full">
+      <label>ชื่อรายการ <span class="req">*</span></label>
+      <input type="text" id="edit-item-name" placeholder="เช่น ค่าทำความสะอาด, ส่วนลด">
+    </div>
+    <div class="field full">
+      <label>จำนวนเงิน (บาท) <span class="req">*</span></label>
+      <input type="number" id="edit-item-amount" placeholder="ใส่ค่าลบสำหรับส่วนลด เช่น -500">
+      <div class="error" id="edit-error" style="display:none;">กรุณากรอกชื่อรายการและจำนวนเงิน</div>
+    </div>
+    <div class="mm-note">การแก้ไขนี้จะถูกบันทึกในประวัติแก้ไขบิล ผู้เช่าจะเห็นรายการนี้ด้วย</div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="edit-cancel">ยกเลิก</button>
+      <button type="button" class="btn btn-primary" id="edit-confirm">บันทึกการแก้ไข</button>
+    </div>
+  </div>
 </div>
 
 <script src="../switcher.js"></script>
@@ -65,12 +96,24 @@
   document.getElementById('inv-due').textContent = inv.dueDate;
   document.getElementById('inv-room-charge').textContent = D.money(inv.roomCharge);
   document.getElementById('inv-utility').textContent = D.money(inv.utilitySubtotal);
-  document.getElementById('inv-total').textContent = D.money(inv.total);
   var s = STATUS_LABEL[inv.status];
   document.getElementById('inv-status-badge').className = 'status-badge ' + s[1];
   document.getElementById('inv-status-badge').textContent = s[0];
 
-  if (inv.electric && inv.water) {
+  // Transfer month (Rule 10.3): two utility periods, one room charge, one bill.
+  if (inv.utilityPeriods) {
+    document.getElementById('util-periods').innerHTML =
+      (inv.transferNote ? '<div class="transfer-note">↪ ' + inv.transferNote + '</div>' : '') +
+      inv.utilityPeriods.map(function (p) {
+        return '<div class="util-period">' +
+          '<div class="up-head">ค่าน้ำ-ไฟ · <span class="up-room">ห้อง ' + p.room + '</span> ' + p.fromLabel + ' – ' + p.toLabel + '</div>' +
+          '<div class="ic-line"><span class="ic-desc">ค่าไฟฟ้า<span class="ic-calc"> (' + p.electric.units + ' หน่วย × ' + D.money(p.electric.rate) + ')</span></span>' +
+            '<span class="ic-amt">' + D.money(p.electric.cost) + '</span></div>' +
+          '<div class="ic-line"><span class="ic-desc">ค่าน้ำ<span class="ic-calc"> (' + p.water.units + ' หน่วย × ' + D.money(p.water.rate) + ')</span></span>' +
+            '<span class="ic-amt">' + D.money(p.water.cost) + '</span></div>' +
+        '</div>';
+      }).join('');
+  } else if (inv.electric && inv.water) {
     document.getElementById('e-line').style.display = '';
     document.getElementById('w-line').style.display = '';
     document.getElementById('utility-line').style.display = 'none';
@@ -101,6 +144,67 @@
     actions = '<div class="demo-note">ส่งโดย ' + (inv.submittedBy || '') + ' — รอผู้ดูแลระบบตรวจสอบ</div>';
   }
   document.getElementById('action-slot').innerHTML = actions;
+
+  // Edit bill (Business Rule 6.5 flexible line items / 6.15 edit + visible history;
+  // permission key `edit_invoice` "แก้บิลที่ออกแล้ว" already exists in S26's matrix
+  // but had no screen wired to it until now). Editing only while unpaid — once a
+  // payment is submitted the amount is locked to what the tenant was told to pay;
+  // a paid/rejected invoice needs void + reissue (separate, not-yet-built action),
+  // not a silent total change.
+  inv.extraItems = inv.extraItems || [];
+  inv.editHistory = inv.editHistory || [];
+
+  function recomputeTotal() {
+    var extraSum = inv.extraItems.reduce(function (sum, item) { return sum + item.amount; }, 0);
+    inv.total = inv.roomCharge + inv.utilitySubtotal + extraSum + (inv.lateFeeFrozen || 0);
+  }
+
+  function renderEditable() {
+    document.getElementById('inv-total').textContent = D.money(inv.total);
+    document.getElementById('extra-items-slot').innerHTML = inv.extraItems.map(function (item) {
+      return '<div class="ic-line"><span class="ic-desc">' + item.name + '</span><span class="ic-amt">' + D.money(item.amount) + '</span></div>';
+    }).join('');
+
+    var historyCard = document.getElementById('edit-history-card');
+    if (inv.editHistory.length) {
+      historyCard.style.display = 'block';
+      document.getElementById('edit-history-rows').innerHTML = inv.editHistory.map(function (h) {
+        return '<div class="demo-note" style="margin-top:6px;">' + h.by + ' เพิ่ม "' + h.name + '" ' + D.money(h.amount) + ' — ' + h.at + '</div>';
+      }).join('');
+    } else {
+      historyCard.style.display = 'none';
+    }
+
+    var role = window.AmanewRole ? window.AmanewRole.current() : 'admin';
+    var editSlot = document.getElementById('edit-slot');
+    if (inv.status === 'unpaid' && role !== 'worker') {
+      editSlot.innerHTML = '<button type="button" class="btn btn-secondary btn-sm" id="btn-edit-bill">แก้ไขบิล</button>' +
+        '<div class="demo-note" style="margin-top:6px;">ต้องมีสิทธิ์ "แก้บิลที่ออกแล้ว" หรือ "ให้ส่วนลด"</div>';
+      document.getElementById('btn-edit-bill').addEventListener('click', function (e) { Demo.openDialog('edit-modal', e.currentTarget); });
+    } else {
+      editSlot.innerHTML = '';
+    }
+  }
+  recomputeTotal();
+  renderEditable();
+
+  document.getElementById('edit-cancel').addEventListener('click', function () { Demo.closeDialog('edit-modal'); });
+  document.getElementById('edit-confirm').addEventListener('click', function () {
+    var name = document.getElementById('edit-item-name').value.trim();
+    var amount = parseFloat(document.getElementById('edit-item-amount').value);
+    if (!name || isNaN(amount) || amount === 0) {
+      document.getElementById('edit-error').style.display = 'block';
+      return;
+    }
+    document.getElementById('edit-error').style.display = 'none';
+    inv.extraItems.push({ name: name, amount: amount });
+    inv.editHistory.push({ by: 'พนักงาน มานี (เดโม)', name: name, amount: amount, at: 'วันนี้ ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) });
+    recomputeTotal();
+    renderEditable();
+    document.getElementById('edit-item-name').value = '';
+    document.getElementById('edit-item-amount').value = '';
+    Demo.closeDialog('edit-modal');
+  });
 </script>
 </body>
 </html>

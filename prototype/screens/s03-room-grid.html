@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S03 · ผังห้อง — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S03" data-title="ผังห้อง">
+<div class="page-content" id="page-content">
+
+  <div class="card">
+    <div class="page-header-row">
+      <div>
+        <h3 style="margin:0;" id="grid-title"></h3>
+        <p class="muted" style="font-size:12px; margin-top:4px;" id="grid-sub"></p>
+      </div>
+      <div class="spacer"></div>
+      <div class="legend" id="grid-legend">
+        <span class="legend-item"><span class="swatch" style="background:var(--success-soft); border:1px solid var(--success);"></span> ว่าง</span>
+        <span class="legend-item"><span class="swatch" style="background:var(--info-soft); border:1px solid var(--info);"></span> มีผู้พัก</span>
+        <span class="legend-item"><span class="swatch" style="background:var(--warning-soft); border:1px dotted var(--warning);"></span> จองแล้ว</span>
+      </div>
+    </div>
+
+    <!-- Room-type filter: guests ask for แอร์ or พัดลม by name, so the picker
+         has to answer that question without opening every room. -->
+    <div class="settings-filters" style="margin-top:14px;">
+      <div class="sf-group">
+        <span class="sf-label">ประเภทห้อง</span>
+        <div class="floor-jump" id="f-type">
+          <button type="button" data-v="all" class="active">ทั้งหมด</button>
+          <button type="button" data-v="aircon">❄ แอร์</button>
+          <button type="button" data-v="fan">🌀 พัดลม</button>
+        </div>
+      </div>
+      <span class="muted" style="font-size:12px;" id="pick-count"></span>
+    </div>
+  </div>
+
+  <div class="card" style="gap:14px; display:flex; flex-direction:column;">
+    <div id="room-grid-wrap"></div>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var params = new URLSearchParams(qs);
+  // pick=monthly|daily → room-picker mode: the front door of every check-in flow.
+  // No pick param → the Worker-safe floor plan (no names, no money).
+  var pick = params.get('pick');
+  if (pick !== 'monthly' && pick !== 'daily') pick = null;
+  var carriedPhone = params.get('phone') || '';
+  var typeFilter = 'all';
+
+  var FLOW_LABEL = { monthly: 'เช็คอินรายเดือน', daily: 'จองห้องรายวัน' };
+
+  if (pick) {
+    document.getElementById('grid-title').textContent = 'เลือกห้องว่าง — ' + FLOW_LABEL[pick];
+    document.getElementById('grid-sub').innerHTML = 'คลิกห้องที่ต้องการ — เฉพาะห้องว่างประเภท' +
+      (pick === 'monthly' ? 'รายเดือน' : 'รายวัน') + 'เท่านั้นที่เลือกได้' +
+      (carriedPhone ? ' · ผู้เช่าเดิม ' + carriedPhone : '');
+  } else {
+    document.getElementById('grid-title').textContent = 'ผังห้อง — มุมมองฝ่ายซ่อมบำรุง';
+    document.getElementById('grid-sub').innerHTML = 'ไม่แสดงชื่อผู้เช่าหรือข้อมูลการเงิน ตามสิทธิ์ของ Worker — สำหรับงานที่มอบหมายจริง ดูที่ ' +
+      '<a href="s29-worker-tasks.html">งานของฉันวันนี้ (S29)</a> บนมือถือ';
+  }
+
+  function stateClass(r) {
+    if (r.state === 'vacant') return 'state-vacant-clean';
+    if (r.state === 'reserved') return 'state-cleaning';
+    return 'state-occupied';
+  }
+  function eligible(r) {
+    return !!pick && r.state === 'vacant' && r.rentalType === pick &&
+           (typeFilter === 'all' || r.roomType === typeFilter);
+  }
+  // Keep the demo role across the jump into the check-in flow.
+  function roleParam() {
+    var role = params.get('role');
+    return role ? '&role=' + encodeURIComponent(role) : '';
+  }
+
+  function render() {
+    var floors = [1, 2, 3, 4];
+    var html = floors.map(function (f) {
+      var onFloor = D.rooms.filter(function (r) { return r.floor === f; });
+      var cards = onFloor.map(function (r) {
+        var type = D.roomTypeOf(r);
+        var cls = 'room-card grid-compact ' + stateClass(r);
+        if (pick) cls += eligible(r) ? ' pick-ok' : ' pick-off';
+        var price = pick === 'monthly' ? D.rentFor(r) : D.nightlyFor(r);
+        var sub = (pick && eligible(r)) ? type.icon + ' ' + D.money(price) : type.icon;
+        var inner = r.number + '<span class="room-sub">' + sub + '</span>';
+        var title = 'ห้อง ' + r.number + ' · ' + type.label;
+        if (pick && eligible(r)) {
+          var href = 's05-tenant-lookup.html?flow=' + pick + '&room=' + r.number +
+            (carriedPhone ? '&phone=' + encodeURIComponent(carriedPhone) : '') + roleParam();
+          return '<a class="' + cls + '" data-rental="' + r.rentalType + '" href="' + href + '" title="' + title + '">' + inner + '</a>';
+        }
+        return '<button type="button" class="' + cls + '" data-room="' + r.number + '" ' +
+          'data-rental="' + r.rentalType + '" title="' + title + '">' + inner + '</button>';
+      }).join('');
+      return '<div class="floor-label">ชั้น ' + f + '</div><div class="room-mini-grid">' + cards + '</div>';
+    }).join('');
+    document.getElementById('room-grid-wrap').innerHTML = html;
+
+    if (pick) {
+      document.getElementById('pick-count').textContent = 'เลือกได้ ' + D.rooms.filter(eligible).length + ' ห้อง';
+      return;
+    }
+    document.getElementById('pick-count').textContent = '';
+    // Worker mode: cards are buttons, never links into S04's tenant/money view
+    // (spec §5.3). Clicking offers the same flag actions available on S29/S04.
+    document.querySelectorAll('[data-room]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var room = btn.dataset.room;
+        var choice = confirm('ห้อง ' + room + ' — กด OK เพื่อแจ้งซ่อม หรือ Cancel เพื่อแจ้งทำความสะอาด');
+        alert((choice ? 'แจ้งซ่อม' : 'แจ้งทำความสะอาด') + 'ห้อง ' + room + ' แล้ว (สาธิต)');
+      });
+    });
+  }
+
+  document.getElementById('f-type').addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-v]');
+    if (!btn) return;
+    document.querySelectorAll('#f-type button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+    typeFilter = btn.dataset.v;
+    render();
+  });
+
+  render();
+</script>
+</body>
+</html>

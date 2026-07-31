@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S36 · เข้าสู่ระบบ (มือถือ) — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .m-brand { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 28px 0 8px; }
+  .m-brand .logo-dot { width: 52px; height: 52px; border-radius: 14px; background: var(--primary); color: var(--primary-contrast);
+    display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 22px; font-family: var(--font-heading); }
+  .m-brand h1 { font-size: 18px; }
+  .m-brand .m-sub { font-size: 13px; color: var(--text-muted); }
+  /* Phone keypad-friendly: 52px fields and a full-width primary. */
+  .m-form .field input { min-height: 52px; font-size: 16px; }
+  .m-form .btn-primary { width: 100%; min-height: 52px; font-size: 16px; }
+  .demo-who { display: flex; flex-direction: column; gap: 8px; }
+  .demo-who button { min-height: 52px; text-align: left; padding: 10px 14px; font-size: 15px; font-weight: 600;
+    border: 1.5px solid var(--border); border-radius: var(--radius); background: var(--card-bg); color: var(--text);
+    display: flex; flex-direction: column; gap: 2px; }
+  .demo-who button .dw-sub { font-size: 12px; font-weight: 400; color: var(--text-muted); }
+  .demo-who button.picked { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+  .demo-who button.picked .dw-sub { color: var(--primary); }
+</style>
+</head>
+<body data-style="a">
+<div class="phone-stage">
+  <div class="phone-frame">
+    <div class="phone-header">
+      <span class="screen-id">S36 · เข้าสู่ระบบ (มือถือ)</span>
+      <div class="spacer" style="flex:1;"></div>
+      <a class="btn btn-ghost btn-sm" href="s01-login.html">จอคอม</a>
+    </div>
+    <div class="phone-body">
+      <div class="m-brand">
+        <span class="logo-dot">A</span>
+        <h1>อมาเนว์ เรสซิเดนซ์</h1>
+        <span class="m-sub">สำหรับผู้เช่า และ ช่าง/แม่บ้าน</span>
+      </div>
+
+      <!-- Phone is the universal identifier (CLAUDE.md) — no email field anywhere,
+           and the same login serves tenants and workers. What you see after
+           logging in comes from the account, not from a picker. -->
+      <form class="m-form" id="login-form" style="display:flex; flex-direction:column; gap:14px;">
+        <div class="field full">
+          <label>เบอร์โทรศัพท์ <span class="req">*</span></label>
+          <input type="tel" id="phone" inputmode="numeric" value="081-234-5678" required>
+        </div>
+        <div class="field full" id="pw-field">
+          <label>รหัสผ่าน <span class="req">*</span></label>
+          <input type="password" id="password" inputmode="numeric" value="1234" required>
+          <div class="error" id="pw-error" style="display:none;">เบอร์โทรศัพท์หรือรหัสผ่านไม่ถูกต้อง</div>
+        </div>
+        <button type="submit" class="btn btn-primary" data-primary>เข้าสู่ระบบ</button>
+        <a href="#" id="forgot" style="text-align:center; font-size:13px;">ลืมรหัสผ่าน — ติดต่อสำนักงาน</a>
+      </form>
+
+      <div class="card" style="display:flex; flex-direction:column; gap:10px;">
+        <div class="demo-note">โหมดสาธิต — เลือกว่าจะเข้าในฐานะใคร (ของจริงระบบรู้จากบัญชีที่ล็อกอิน ไม่ใช่จากปุ่มนี้)</div>
+        <div class="demo-who" id="who">
+          <button type="button" data-who="tenant" class="picked">ผู้เช่า<span class="dw-sub">คุณสมชาย ใจดี · ห้อง 105 → หน้าผู้เช่า (S33)</span></button>
+          <button type="button" data-who="worker">ช่าง / แม่บ้าน<span class="dw-sub">ฝ่ายซ่อมบำรุง → งานของฉันวันนี้ (S29)</span></button>
+        </div>
+      </div>
+
+      <div class="demo-note">
+        พนักงานออฟฟิศ (Staff) และเจ้าของ (Admin) ใช้จอคอมพิวเตอร์ที่หน้า S01 — มือถือมีเฉพาะผู้เช่ากับช่าง/แม่บ้าน
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../switcher.js"></script>
+<script src="demo.js"></script>
+<script>
+  var who = 'tenant';
+  var PHONE_FOR = { tenant: '081-234-5678', worker: '083-234-3333' };
+
+  document.getElementById('who').addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-who]');
+    if (!btn) return;
+    who = btn.dataset.who;
+    document.querySelectorAll('#who button').forEach(function (b) { b.classList.toggle('picked', b === btn); });
+    document.getElementById('phone').value = PHONE_FOR[who];
+  });
+
+  document.getElementById('forgot').addEventListener('click', function (e) {
+    e.preventDefault();
+    alert('ติดต่อสำนักงานเพื่อรีเซ็ตรหัสผ่าน (สาธิต) — ไม่มีการรีเซ็ตด้วยอีเมล เพราะระบบไม่เก็บอีเมลผู้เช่า');
+  });
+
+  var form = document.getElementById('login-form');
+  Demo.submitWithSpinner(form, function (e, restore) {
+    if (document.getElementById('password').value === 'wrong') {
+      document.getElementById('pw-error').style.display = 'block';
+      document.getElementById('pw-field').classList.add('invalid');
+      restore();
+      return;
+    }
+    var style = new URLSearchParams(location.search).get('style') || 'a';
+    location.href = (who === 'worker' ? 's29-worker-tasks.html' : 's33-tenant-home.html') + '?style=' + style;
+  }, 600);
+</script>
+</body>
+</html>

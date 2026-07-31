@@ -3,24 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>S17 · สรุปสร้างบิลทั้งหมด — อมาเนว์</title>
+<title>S17 · สร้างบิลประจำเดือน — อมาเนว์</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../tokens.css">
 <link rel="stylesheet" href="../components.css">
 <link rel="stylesheet" href="shared.css">
 </head>
-<body data-style="a" data-screen="S17" data-title="สรุปสร้างบิลทั้งหมด">
+<body data-style="a" data-screen="S17" data-title="สร้างบิลประจำเดือน">
 <div class="page-content" id="page-content">
 
-  <div class="kpi-row">
-    <div class="kpi-tile kpi-success"><div class="kpi-num">3</div><div class="kpi-label">สร้างบิลสำเร็จ</div></div>
+  <p class="muted" id="intro-line" style="font-size:13px; margin:0;">ตรวจสอบรายการก่อนสร้างบิล — ห้องที่มีบิลของงวดนี้อยู่แล้วจะถูกข้าม (ป้องกันโดยข้อจำกัดของฐานข้อมูล) รอบก่อนหน้าไม่หายไปไหน สามารถกดสร้างบิลซ้ำได้ตลอด</p>
+
+  <div class="kpi-row" id="kpi-row">
+    <div class="kpi-tile kpi-primary"><div class="kpi-num">3</div><div class="kpi-label" id="kpi-ready-label">พร้อมสร้างบิล</div></div>
     <div class="kpi-tile"><div class="kpi-num">1</div><div class="kpi-label">สร้างไปแล้วก่อนหน้า</div></div>
     <div class="kpi-tile kpi-danger"><div class="kpi-num">1</div><div class="kpi-label">ข้อมูลไม่ครบ</div></div>
   </div>
 
   <div class="card">
-    <h3>✓ สร้างบิลสำเร็จ (3)</h3>
+    <h3 id="ready-heading">พร้อมสร้างบิล (3)</h3>
     <table class="data-table">
       <tbody>
         <tr><td>ห้อง 105</td><td class="td-muted">คุณสมชาย ใจดี</td><td class="td-money">฿4,980</td></tr>
@@ -42,6 +44,7 @@
 
   <div class="card">
     <h3>ข้อมูลไม่ครบ (1) — ต้องดำเนินการ</h3>
+    <p class="muted" style="font-size:13px;">ห้องเหล่านี้จะถูกข้ามจนกว่าจะกรอกข้อมูลให้ครบ</p>
     <table class="data-table">
       <tbody>
         <tr>
@@ -54,9 +57,11 @@
     </table>
   </div>
 
-  <div class="demo-note">สามารถกดสร้างบิลทั้งหมดซ้ำได้ตลอด — ห้องที่เสร็จแล้วจะไม่ถูกสร้างซ้ำ (ป้องกันโดยข้อจำกัดของฐานข้อมูล)</div>
-
-  <a class="btn btn-primary" style="align-self:flex-start;" href="s18-invoice-list.html">ไปที่รายการใบแจ้งหนี้</a>
+  <div id="action-slot" style="display:flex; gap:10px;">
+    <button type="button" class="btn btn-primary" id="btn-confirm-batch" data-primary>ยืนยันสร้างบิลทั้งหมด (3 ห้อง)</button>
+    <a class="btn btn-secondary" href="s18-invoice-list.html">ยกเลิก</a>
+  </div>
+  <div id="result-slot"></div>
 
 </div>
 
@@ -65,5 +70,21 @@
 <script src="data.js"></script>
 <script src="demo.js"></script>
 <script src="nav.js"></script>
+<script>
+  document.getElementById('btn-confirm-batch').addEventListener('click', function (e) {
+    var btn = e.currentTarget;
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> กำลังสร้างบิล…';
+    setTimeout(function () {
+      document.getElementById('intro-line').textContent = 'สร้างบิลประจำเดือนเรียบร้อยแล้ว — ผลลัพธ์ด้านล่าง';
+      document.getElementById('kpi-ready-label').textContent = 'สร้างบิลสำเร็จ';
+      document.getElementById('ready-heading').textContent = '✓ สร้างบิลสำเร็จ (3)';
+      document.getElementById('action-slot').style.display = 'none';
+      document.getElementById('result-slot').innerHTML =
+        '<div class="success-banner">✓ สร้างบิลประจำเดือนแล้ว 3 ห้อง — ห้อง 202 ยังรอข้อมูลมิเตอร์</div>' +
+        '<a class="btn btn-primary" style="margin-top:10px;" href="s18-invoice-list.html">ไปที่รายการใบแจ้งหนี้</a>';
+    }, 700);
+  });
+</script>
 </body>
 </html>

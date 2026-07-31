@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S31 · ปฏิทินรายวัน — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .cal-table { width:100%; border-collapse: collapse; font-size: 13px; }
+  .cal-table th, .cal-table td { border: 1px solid var(--border); padding: 6px 8px; text-align: center; }
+  .cal-table th { background: var(--surface); font-weight: 600; }
+  .cal-table td.today-col, .cal-table th.today-col { border-left: 2px solid var(--primary); border-right: 2px solid var(--primary); }
+  .cal-room { text-align: left; font-family: var(--font-mono); font-weight: 700; white-space: nowrap; }
+  .cal-cell { border-radius: 4px; }
+  .cal-cell.occupied { background: var(--info-soft); color: var(--info); }
+  .cal-cell.reserved { background: var(--warning-soft); color: var(--warning); }
+  .cal-cell.vacant { background: var(--success-soft); color: var(--success); }
+</style>
+</head>
+<body data-style="a" data-screen="S31" data-title="ปฏิทินรายวัน">
+<div class="page-content" id="page-content">
+
+  <div class="card">
+    <h3>ปฏิทินห้องรายวัน — 7 วันข้างหน้า</h3>
+    <p class="muted" style="font-size:12px;">มุมมองสัปดาห์ของห้องรายวันทั้งหมด — สถานะต่อวันเป็นข้อมูลสาธิต (ไม่มี API ปฏิทินจริงในเฟส 1)</p>
+  </div>
+
+  <div class="card" style="overflow-x:auto;">
+    <table class="cal-table" id="cal-table"></table>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var DAYS = ['29 ก.ค.', '30 ก.ค.', '31 ก.ค.', '1 ส.ค.', '2 ส.ค.', '3 ส.ค.', '4 ส.ค.'];
+  var TODAY_INDEX = 2; // 31 ก.ค. 2569
+
+  // Demo-only per-day highlight for the two rooms with known check-in/out dates;
+  // every other daily room shows its current state uniformly across the week —
+  // a simplification, since no per-day booking calendar API exists in Phase 1.
+  var RANGE_OVERRIDE = {
+    '104': [0, 1],   // เช็คอิน 8 ก.ค. – เช็คเอาท์ 10 ก.ค. shown here as the demo's nearest 2-day window
+    '108': [5, 6]    // เช็คอิน 29 ก.ค. – เช็คเอาท์ 31 ก.ค. shown as its own 2-day window
+  };
+
+  var daily = D.rooms.filter(function (r) { return r.rentalType === 'daily'; });
+
+  var thead = '<tr><th>ห้อง</th>' + DAYS.map(function (d, i) {
+    return '<th class="' + (i === TODAY_INDEX ? 'today-col' : '') + '">' + d + (i === TODAY_INDEX ? '<br><span style="font-size:10px;">วันนี้</span>' : '') + '</th>';
+  }).join('') + '</tr>';
+
+  var rows = daily.map(function (r) {
+    var range = RANGE_OVERRIDE[r.number];
+    var cells = DAYS.map(function (d, i) {
+      var state = r.state;
+      if (range) state = (i >= range[0] && i <= range[1]) ? r.state : 'vacant';
+      var label = state === 'vacant' ? 'ว่าง' : (state === 'reserved' ? 'จอง' : 'พัก');
+      return '<td class="' + (i === TODAY_INDEX ? 'today-col' : '') + '"><span class="cal-cell ' + state + '">' + label + '</span></td>';
+    }).join('');
+    return '<tr><td class="cal-room">' + r.number + '</td>' + cells + '</tr>';
+  }).join('');
+
+  document.getElementById('cal-table').innerHTML = thead + rows;
+</script>
+</body>
+</html>

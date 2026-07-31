@@ -14,9 +14,11 @@
 <div class="page-content" id="page-content">
 
   <div class="wizard-stepper">
+    <div class="wiz-step done"><span class="wiz-num">✓</span> เลือกห้อง</div>
+    <div class="wiz-connector"></div>
     <div class="wiz-step done"><span class="wiz-num">✓</span> ค้นหาผู้เช่า</div>
     <div class="wiz-connector"></div>
-    <div class="wiz-step current"><span class="wiz-num">2</span> จองห้องรายวัน</div>
+    <div class="wiz-step current"><span class="wiz-num">3</span> จองห้องรายวัน</div>
   </div>
 
   <div class="card" style="max-width:520px;">
@@ -35,9 +37,17 @@
         <label>จำนวนคืน (คำนวณอัตโนมัติ)</label>
         <input type="text" id="nights" disabled>
       </div>
-      <div class="field">
-        <label>ราคา/คืน (บาท) <span class="req">*</span></label>
-        <input type="number" id="rate" min="0" step="50" required>
+      <!-- Rate comes from ตั้งค่าห้อง (S24), by room type — never typed from scratch.
+           Admin can still override it for this one booking, and the override is
+           flagged on the booking (CLAUDE.md rule #7, audit trail visible). -->
+      <div class="field prefilled" id="rate-field">
+        <label>ราคา/คืน (บาท)</label>
+        <input type="number" id="rate" min="0" step="50" required readonly>
+        <div class="hint" id="rate-hint"></div>
+      </div>
+      <div class="field prefilled">
+        <label>ยอดรวมทั้งพัก (คำนวณอัตโนมัติ)</label>
+        <input type="text" id="stay-total" disabled>
       </div>
       <div class="field full" style="flex-direction:row; gap:10px; margin-top:6px;">
         <button type="submit" class="btn btn-primary" data-primary>บันทึกการจอง</button>
@@ -98,21 +108,65 @@
 
   var d1 = new Date();
   var d2 = new Date(); d2.setDate(d2.getDate() + 1);
-  function fmt(d) { return d.toISOString().slice(0, 10); }
+  var fmt = D.isoDate;
   document.getElementById('checkin').value = fmt(d1);
   document.getElementById('checkout').value = fmt(d2);
-  document.getElementById('rate').value = r ? r.defaultNightly : 500;
+  // Standard price for this room's type, straight from ตั้งค่าห้อง.
+  var roomType = r ? D.roomTypeOf(r) : D.ROOM_TYPES.fan;
+  var standardRate = r ? D.nightlyFor(r) : D.ROOM_TYPES.fan.defaultNightly;
+  var rateInput = document.getElementById('rate');
+  var rateOverridden = false;
+  rateInput.value = standardRate;
+  renderRateHint();
+
+  function renderRateHint() {
+    var role = window.AmanewRole ? window.AmanewRole.current() : 'admin';
+    var base = '<span class="type-chip ' + roomType.key + '">' + roomType.icon + ' ' + roomType.short + '</span> ' +
+      'ราคามาตรฐาน ' + D.money(standardRate) + '/คืน';
+    if (rateOverridden) {
+      document.getElementById('rate-hint').innerHTML = base +
+        ' · <span class="override-note">ปรับราคาเฉพาะการจองนี้ — จะถูกบันทึกในประวัติ</span>' +
+        ' · <a href="#" id="rate-reset">ใช้ราคามาตรฐาน</a>';
+      document.getElementById('rate-reset').addEventListener('click', function (ev) {
+        ev.preventDefault();
+        rateOverridden = false;
+        rateInput.readOnly = true;
+        rateInput.value = standardRate;
+        document.getElementById('rate-field').classList.add('prefilled');
+        renderRateHint();
+        recalcNights();
+      });
+      return;
+    }
+    document.getElementById('rate-hint').innerHTML = base +
+      ' · <a href="s24-room-settings.html' + qs + '">แก้ราคามาตรฐาน</a>' +
+      (role === 'admin' ? ' · <a href="#" id="rate-override">ปรับราคาเฉพาะการจองนี้</a>' : '');
+    var ov = document.getElementById('rate-override');
+    if (ov) ov.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      rateOverridden = true;
+      rateInput.readOnly = false;
+      document.getElementById('rate-field').classList.remove('prefilled');
+      renderRateHint();
+      rateInput.focus();
+      rateInput.select();
+    });
+  }
 
   function recalcNights() {
     var ci = new Date(document.getElementById('checkin').value);
     var co = new Date(document.getElementById('checkout').value);
     var nights = Math.round((co - ci) / 86400000);
-    document.getElementById('nights').value = (nights > 0 ? nights : 0) + ' คืน';
+    nights = nights > 0 ? nights : 0;
+    document.getElementById('nights').value = nights + ' คืน';
+    document.getElementById('stay-total').value =
+      D.money(nights * (Number(rateInput.value) || 0)) + ' (' + nights + ' คืน × ' + D.money(Number(rateInput.value) || 0) + ')';
     return nights;
   }
   recalcNights();
   document.getElementById('checkin').addEventListener('change', recalcNights);
   document.getElementById('checkout').addEventListener('change', recalcNights);
+  rateInput.addEventListener('input', recalcNights);
 
   var shiftHeld = false;
   var form = document.getElementById('booking-form');

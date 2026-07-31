@@ -14,9 +14,11 @@
 <div class="page-content" id="page-content">
 
   <div class="wizard-stepper">
+    <div class="wiz-step done"><span class="wiz-num">✓</span> เลือกห้อง</div>
+    <div class="wiz-connector"></div>
     <div class="wiz-step done"><span class="wiz-num">✓</span> ค้นหาผู้เช่า</div>
     <div class="wiz-connector"></div>
-    <div class="wiz-step current"><span class="wiz-num">2</span> ย้ายเข้ารายเดือน</div>
+    <div class="wiz-step current"><span class="wiz-num">3</span> ข้อมูลการเช่า</div>
   </div>
 
   <div class="card" style="max-width:520px;">
@@ -27,9 +29,36 @@
         <label>วันที่เริ่มเช่า <span class="req">*</span></label>
         <input type="date" id="start-date" required>
       </div>
+      <!-- Rent comes from ตั้งค่าห้อง (S24), by room type. Once this contract is
+           signed the figure is frozen for its whole life (CLAUDE.md rule #2) —
+           later changes to the standard price never reach back into it. -->
+      <div class="field prefilled" id="rent-field">
+        <label>ค่าเช่า/เดือน (บาท)</label>
+        <input type="number" id="rent" min="0" step="100" required readonly>
+        <div class="hint" id="rent-hint"></div>
+      </div>
+      <!-- Agreed stay duration — negotiated per contract, not a template value
+           (Business Rule 4.12). This is the figure early termination is measured
+           against, so it is captured at signing, never assumed. -->
+      <div class="field">
+        <label>ตกลงอยู่กี่เดือน <span class="req">*</span></label>
+        <select id="agreed-months" required></select>
+      </div>
+      <div class="field prefilled">
+        <label>สัญญาสิ้นสุด (คำนวณอัตโนมัติ)</label>
+        <input type="text" id="contract-end" disabled>
+      </div>
       <div class="field">
         <label>เงินประกัน (บาท) <span class="req">*</span></label>
         <input type="number" id="deposit" min="0" step="100" required>
+        <div class="hint">ค่าเริ่มต้น = ค่าเช่า 2 เดือน</div>
+      </div>
+      <div class="field full">
+        <div class="rule-note" id="term-note"></div>
+      </div>
+      <div class="field full" id="custom-months-slot" style="display:none;">
+        <label>ระบุจำนวนเดือน <span class="req">*</span></label>
+        <input type="number" id="custom-months" min="1" max="60" step="1" placeholder="เช่น 9">
       </div>
       <div class="field full" style="flex-direction:row; gap:10px; margin-top:6px;">
         <button type="submit" class="btn btn-primary" data-primary>ยืนยันเช็คอิน</button>
@@ -75,9 +104,78 @@
   document.getElementById('conflict-room').textContent = room;
   document.getElementById('cancel-link').href = 's04-room-detail.html?room=' + room + qsAmp;
 
-  var today = new Date().toISOString().slice(0, 10);
+  var today = D.isoDate(D.TODAY);
   document.getElementById('start-date').value = today;
-  document.getElementById('deposit').value = (r ? r.defaultRent : 3500) * 2;
+  var roomType = r ? D.roomTypeOf(r) : D.ROOM_TYPES.fan;
+  var standardRent = r ? D.rentFor(r) : D.ROOM_TYPES.fan.defaultRent;
+  var rentInput = document.getElementById('rent');
+  var rentOverridden = false;
+  rentInput.value = standardRent;
+  document.getElementById('deposit').value = standardRent * 2;
+  renderRentHint();
+
+  function renderRentHint() {
+    var role = window.AmanewRole ? window.AmanewRole.current() : 'admin';
+    var base = '<span class="type-chip ' + roomType.key + '">' + roomType.icon + ' ' + roomType.short + '</span> ' +
+      'ราคามาตรฐาน ' + D.money(standardRent) + '/เดือน · ล็อกตลอดอายุสัญญา';
+    if (rentOverridden) {
+      document.getElementById('rent-hint').innerHTML = base +
+        ' · <span class="override-note">ปรับราคาเฉพาะสัญญานี้ — จะถูกบันทึกในประวัติ</span>' +
+        ' · <a href="#" id="rent-reset">ใช้ราคามาตรฐาน</a>';
+      document.getElementById('rent-reset').addEventListener('click', function (ev) {
+        ev.preventDefault();
+        rentOverridden = false;
+        rentInput.readOnly = true;
+        rentInput.value = standardRent;
+        document.getElementById('rent-field').classList.add('prefilled');
+        renderRentHint();
+      });
+      return;
+    }
+    document.getElementById('rent-hint').innerHTML = base +
+      ' · <a href="s24-room-settings.html' + qs + '">แก้ราคามาตรฐาน</a>' +
+      (role === 'admin' ? ' · <a href="#" id="rent-override">ปรับราคาเฉพาะสัญญานี้</a>' : '');
+    var ov = document.getElementById('rent-override');
+    if (ov) ov.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      rentOverridden = true;
+      rentInput.readOnly = false;
+      document.getElementById('rent-field').classList.remove('prefilled');
+      renderRentHint();
+      rentInput.focus();
+      rentInput.select();
+    });
+  }
+
+  // ---- Agreed term ----
+  var monthsSelect = document.getElementById('agreed-months');
+  monthsSelect.innerHTML = D.AGREED_MONTH_OPTIONS.map(function (m) {
+    return '<option value="' + m + '"' + (m === 12 ? ' selected' : '') + '>' + m + ' เดือน</option>';
+  }).join('') + '<option value="custom">อื่นๆ (ระบุเอง)</option>';
+
+  function agreedMonths() {
+    if (monthsSelect.value === 'custom') return Number(document.getElementById('custom-months').value) || 0;
+    return Number(monthsSelect.value);
+  }
+  function renderTerm() {
+    var m = agreedMonths();
+    var startVal = document.getElementById('start-date').value;
+    var start = startVal ? D.parseISO(startVal) : D.TODAY;
+    document.getElementById('custom-months-slot').style.display = monthsSelect.value === 'custom' ? '' : 'none';
+    document.getElementById('contract-end').value = m > 0 ? D.thaiDate(D.addMonths(start, m)) : '—';
+    // Rule 4.12 stated where the commitment is actually made, not buried in a doc.
+    document.getElementById('term-note').innerHTML = m > 0
+      ? 'ผู้เช่าตกลงอยู่ <strong>' + m + ' เดือน</strong> — ย้ายออกก่อนครบกำหนดจะ<strong>ริบเงินประกัน</strong> ' +
+        D.money(document.getElementById('deposit').value || 0) + ' · ค่าเช่าล็อกที่ ' + D.money(rentInput.value || 0) + '/เดือน ตลอดสัญญา'
+      : 'กรุณาระบุจำนวนเดือนที่ตกลงกัน';
+  }
+  ['change', 'input'].forEach(function (ev) {
+    monthsSelect.addEventListener(ev, renderTerm);
+    document.getElementById('custom-months').addEventListener(ev, renderTerm);
+    document.getElementById('start-date').addEventListener(ev, renderTerm);
+    document.getElementById('deposit').addEventListener(ev, renderTerm);
+  });
+  renderTerm();
 
   var shiftHeld = false;
   var form = document.getElementById('tenancy-form');
@@ -90,7 +188,11 @@
       Demo.openDialog('conflict-dialog', form.querySelector('[data-primary]'));
       return;
     }
-    location.href = 's02-dashboard.html?banner=' + encodeURIComponent('เช็คอินผู้เช่า ' + name + ' ห้อง ' + room + ' สำเร็จ') + qsAmp;
+    var m = agreedMonths();
+    if (!m) { restore(); document.getElementById('custom-months').focus(); return; }
+    location.href = 's02-dashboard.html?banner=' +
+      encodeURIComponent('เช็คอินผู้เช่า ' + name + ' ห้อง ' + room + ' สำเร็จ — สัญญา ' + m + ' เดือน ถึง ' +
+        document.getElementById('contract-end').value) + qsAmp;
   }, 700);
 </script>
 </body>

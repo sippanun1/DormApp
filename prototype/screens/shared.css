@@ -84,3 +84,165 @@
 .match-indicator { display: flex; align-items: center; gap: 8px; font-weight: 600; }
 .match-indicator.match { color: var(--success); }
 .match-indicator.mismatch { color: var(--danger); }
+
+/* ------------------------------------------------------------------
+   Room type (แอร์ / พัดลม) — a second axis alongside รายเดือน/รายวัน.
+   Kept visually quieter than the rental-type accent on purpose: rental
+   type drives which flow staff start, room type only drives price.
+   ------------------------------------------------------------------ */
+.type-chip {
+  display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+  border: 1px solid var(--border); border-radius: 999px;
+  padding: 1px 9px; font-size: 12px; font-weight: 600; color: var(--text-muted);
+  background: var(--surface);
+}
+.type-chip.aircon { color: var(--info); border-color: color-mix(in srgb, var(--info) 40%, var(--border)); background: var(--info-soft); }
+.type-chip.sm { font-size: 11px; padding: 0 7px; }
+
+/* ------------------------------------------------------------------
+   S13 batch meter sheet — the whole month's reading round on one page.
+   One <tr> per room; each row saves on its own so a half-walked floor
+   is never lost. Column widths fixed so the numbers line up vertically
+   down the floor, which is how a typo gets spotted.
+   ------------------------------------------------------------------ */
+.meter-batch { width: 100%; border-collapse: collapse; background: var(--card-bg); }
+.meter-batch th {
+  text-align: left; font-size: 11px; color: var(--text-muted); font-weight: 600;
+  padding: 7px 8px; border-bottom: 1px solid var(--border); background: var(--surface);
+  position: sticky; top: 0; z-index: 2;
+}
+.meter-batch th.num, .meter-batch td.num { text-align: right; }
+.meter-batch td { padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.meter-batch tr:last-child td { border-bottom: none; }
+.meter-batch .mb-room { font-family: var(--font-mono); font-weight: 700; }
+.meter-batch .mb-tenant { color: var(--text-muted); font-size: 13px; max-width: 190px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meter-batch .mb-prev { font-family: var(--font-mono); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.meter-batch .mb-prev::after { content: ' 🔒'; font-size: 9px; }
+.meter-batch input.mb-input {
+  width: 92px; padding: 6px 8px; text-align: right;
+  border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px);
+  font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 14px;
+  background: var(--card-bg); color: var(--text);
+}
+.meter-batch input.mb-input:focus { outline: 2px solid var(--primary); border-color: transparent; }
+.meter-batch .mb-units { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.meter-batch .mb-total { font-family: var(--font-mono); font-weight: 600; font-variant-numeric: tabular-nums; }
+.meter-batch tr.saved { background: var(--success-soft); }
+.meter-batch tr.saved .mb-status { color: var(--success); font-weight: 600; }
+.meter-batch tr.row-warning { background: var(--warning-soft); }
+.meter-batch tr.row-warning .mb-status { color: var(--warning); font-weight: 600; }
+.meter-batch tr.estimated .mb-total { color: var(--warning); }
+.meter-batch .mb-status { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+.meter-batch .mb-est { font-size: 11px; color: var(--text-muted); display: inline-flex; align-items: center; gap: 4px; cursor: pointer; }
+
+.progress-wrap { display: flex; align-items: center; gap: 12px; }
+.progress-bar { flex: 1; height: 8px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); overflow: hidden; }
+.progress-bar > span { display: block; height: 100%; background: var(--success); width: 0; transition: width .25s ease; }
+.progress-count { font-family: var(--font-mono); font-weight: 700; font-size: 15px; white-space: nowrap; }
+
+.floor-jump { display: flex; flex-wrap: wrap; gap: 6px; }
+.floor-jump button, .chip-btn {
+  border: 1px solid var(--border); background: var(--card-bg); color: var(--text-muted);
+  border-radius: 999px; padding: 5px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.floor-jump button.active, .chip-btn.active { background: var(--primary-soft); color: var(--primary); border-color: var(--primary); }
+
+.sticky-actions {
+  position: sticky; bottom: 0; z-index: 5;
+  background: var(--card-bg); border-top: 1px solid var(--border);
+  /* right padding clears the fixed style-switcher widget in the corner */
+  padding: 12px 170px 12px 16px; margin: 0 calc(var(--pad-card) * -1) calc(var(--pad-card) * -1);
+  display: flex; align-items: center; gap: 12px; border-radius: 0 0 var(--radius) var(--radius);
+}
+
+/* ------------------------------------------------------------------
+   S03 room-picker mode — pick the room off the real floor plan instead
+   of a 40-option dropdown. Ineligible rooms stay visible (context) but
+   are dimmed and unclickable.
+   ------------------------------------------------------------------ */
+.room-mini-grid .room-card.pick-ok { cursor: pointer; }
+.room-mini-grid .room-card.pick-ok:hover { outline: 2px solid var(--primary); }
+.room-mini-grid .room-card.pick-off { opacity: .32; pointer-events: none; filter: grayscale(.6); }
+.room-mini-grid .room-card.picked { outline: 3px solid var(--primary); font-weight: 700; }
+
+/* ------------------------------------------------------------------
+   Topbar global search — "who is in 105 / where is คุณสมชาย / is #1042 paid"
+   ------------------------------------------------------------------ */
+.topbar-search { position: relative; width: 280px; }
+.topbar-search input {
+  width: 100%; padding: 7px 12px 7px 30px; font-size: 13px;
+  border: 1px solid var(--border); border-radius: 999px;
+  background: var(--card-bg); color: var(--text); font-family: inherit;
+}
+.topbar-search input:focus { outline: 2px solid var(--primary); border-color: transparent; }
+.topbar-search .ts-ic { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--text-muted); pointer-events: none; }
+.ts-results {
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 70;
+  background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--drawer-shadow); overflow: hidden; display: none;
+}
+.ts-results.open { display: block; }
+.ts-results a, .ts-empty { display: block; padding: 9px 12px; border-bottom: 1px solid var(--border); text-decoration: none; color: var(--text); }
+.ts-results a:last-child { border-bottom: none; }
+.ts-results a:hover, .ts-results a.cursor { background: var(--primary-soft); }
+.ts-results .ts-label { font-weight: 600; font-size: 13px; }
+.ts-results .ts-sub { font-size: 12px; color: var(--text-muted); }
+.ts-empty { color: var(--text-muted); font-size: 13px; }
+
+/* ------------------------------------------------------------------
+   S24 ตั้งค่าห้อง — standard price cards + the full 60-room table
+   ------------------------------------------------------------------ */
+.price-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap); }
+.price-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; background: var(--card-bg); }
+.price-card.aircon { border-color: color-mix(in srgb, var(--info) 45%, var(--border)); background: var(--info-soft); }
+.price-card .pc-head { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+.price-card .pc-count { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+.price-card .pc-prices { display: flex; gap: 26px; margin: 12px 0 10px; }
+.price-card .pc-price .pcp-label { font-size: 11px; color: var(--text-muted); font-weight: 600; }
+.price-card .pc-price .pcp-value { font-family: var(--font-mono); font-size: 22px; font-weight: 700; }
+.price-card .pc-price .pcp-unit { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+
+.settings-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; }
+.settings-filters .sf-group { display: flex; align-items: center; gap: 6px; }
+.settings-filters .sf-label { font-size: 12px; font-weight: 600; color: var(--text-muted); }
+.rule-note {
+  font-size: 12px; color: var(--text-muted); background: var(--surface);
+  border-left: 3px solid var(--info); border-radius: calc(var(--radius) - 2px); padding: 8px 12px;
+}
+.override-note { font-size: 11px; color: var(--warning); font-weight: 600; }
+
+/* ------------------------------------------------------------------
+   Contract term panel (S04) — agreed months, elapsed progress, and the
+   early-termination consequence stated where staff actually look.
+   ------------------------------------------------------------------ */
+.contract-panel {
+  border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 12px 14px; background: var(--surface); display: flex; flex-direction: column; gap: 8px;
+}
+.contract-panel .cp-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.contract-panel .cp-term { font-weight: 700; font-size: 15px; }
+.contract-panel .cp-dates { font-family: var(--font-mono); font-size: 13px; color: var(--text-muted); }
+.contract-panel .cp-bar { height: 6px; border-radius: 999px; background: var(--card-bg); border: 1px solid var(--border); overflow: hidden; }
+.contract-panel .cp-bar > span { display: block; height: 100%; background: var(--info); }
+.contract-panel .cp-note { font-size: 12px; color: var(--text-muted); }
+
+/* S16 pre-issue line items (discounts / extra charges) */
+.line-item-row { display: flex; align-items: center; gap: 8px; }
+.line-item-row input[type="text"] { flex: 1; }
+.line-item-row input[type="number"] { width: 120px; text-align: right; font-family: var(--font-mono); }
+.line-item-row input { padding: 7px 10px; border: 1px solid var(--border); border-radius: calc(var(--radius) - 2px); background: var(--card-bg); color: var(--text); font-family: inherit; font-size: 13px; }
+.quick-items { display: flex; flex-wrap: wrap; gap: 6px; }
+.ic-line.ic-added .ic-desc { color: var(--info); }
+.ic-line.ic-added.ic-minus .ic-desc, .ic-line.ic-added.ic-minus .ic-amt { color: var(--success); }
+.ic-remove { background: none; border: none; color: var(--text-muted); font-size: 13px; cursor: pointer; padding: 0 4px; }
+
+/* ------------------------------------------------------------------
+   Transfer-month invoice — utilities billed in two periods on one bill
+   (Business Rule 10.3). Each period names its room and date range so a
+   tenant reading the bill can see why there are two of everything.
+   ------------------------------------------------------------------ */
+.util-period { border: 1px dashed var(--border); border-radius: calc(var(--radius) - 2px); padding: 8px 10px; margin: 6px 0; }
+.util-period .up-head { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 4px; }
+.util-period .up-head .up-room { font-family: var(--font-mono); color: var(--text); font-size: 13px; }
+.util-period .ic-line:last-child { border-bottom: none; }
+.transfer-note { font-size: 12px; color: var(--info); font-weight: 600; margin: 6px 0; }

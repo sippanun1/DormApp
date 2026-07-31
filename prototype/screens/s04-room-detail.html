@@ -30,6 +30,8 @@
   var D = window.AmanewData;
   var qs = location.search;
   var qsAmp = qs.replace(/^\?/, '&');
+  // Needed while the cards below are being built, not just for the action row.
+  var role = window.AmanewRole ? window.AmanewRole.current() : 'admin';
   var params = new URLSearchParams(qs);
   var roomNo = params.get('room') || '105';
   var r = D.room(roomNo) || D.rooms[0];
@@ -44,8 +46,29 @@
     return '<button type="button" id="' + id + '" class="btn ' + (cls || 'btn-secondary') + '">' + label + '</button>';
   }
 
+  // Contract term panel — how many months were agreed (Rule 4.12), how far
+  // through the tenant is, and what leaving early costs them.
+  function contractBlock(c, deposit) {
+    if (!c) return '';
+    var status = c.expired
+      ? '<span class="status-badge badge-danger">ครบกำหนดแล้ว — ต้องต่อสัญญาใหม่</span>'
+      : c.expiringSoon
+        ? '<span class="status-badge badge-warning">เหลืออีก ' + c.daysLeft + ' วัน — แจ้งต่อสัญญา</span>'
+        : '<span class="status-badge badge-success">เหลืออีก ' + c.monthsLeft + ' เดือน (' + c.daysLeft + ' วัน)</span>';
+    return '<div class="contract-panel">' +
+      '<div class="cp-head"><span class="section-title" style="margin:0;">สัญญาเช่า</span>' +
+        '<span class="cp-term">ตกลงอยู่ ' + c.months + ' เดือน</span>' + status + '</div>' +
+      '<div class="cp-dates">' + c.startLabel + ' → ' + c.endLabel + '</div>' +
+      '<div class="cp-bar"><span style="width:' + c.percentElapsed + '%;"></span></div>' +
+      '<div class="cp-note">ย้ายออกก่อน ' + c.endLabel + ' = ผิดสัญญา ริบเงินประกัน ' + D.money(deposit) +
+        ' (กฎ 4.12) · ค่าเช่าล็อกตลอดอายุสัญญา</div>' +
+    '</div>';
+  }
+
+  var roomType = D.roomTypeOf(r);
   var headCard = '<div class="card" style="display:flex; align-items:center; gap:14px;">' +
     '<div style="font-size:26px; font-weight:700;">ห้อง ' + r.number + '</div>' +
+    '<span class="type-chip ' + roomType.key + '">' + roomType.icon + ' ' + roomType.short + '</span>' +
     '<span class="status-badge badge-neutral">' + (r.rentalType === 'monthly' ? 'รายเดือน' : 'รายวัน') + '</span>';
 
   if (r.state === 'vacant') {
@@ -55,7 +78,11 @@
     html = headCard +
       '<div class="card">' +
         '<h3>ห้องนี้ว่างอยู่</h3>' +
-        '<p class="muted" style="margin-bottom:14px;">' + (flow === 'monthly' ? 'ห้องพักรายเดือน พร้อมรับผู้เช่าใหม่' : 'ห้องพักรายวัน พร้อมรับการจอง') + '</p>' +
+        '<p class="muted" style="margin-bottom:10px;">' + (flow === 'monthly' ? 'ห้องพักรายเดือน พร้อมรับผู้เช่าใหม่' : 'ห้องพักรายวัน พร้อมรับการจอง') + '</p>' +
+        // Price shown before the flow starts, straight from ตั้งค่าห้อง (S24).
+        '<div style="margin-bottom:14px;"><span class="section-title">ราคามาตรฐาน (' + roomType.short + ')</span> ' +
+          '<span class="money">' + (flow === 'monthly' ? D.money(D.rentFor(r)) + ' /เดือน' : D.money(D.nightlyFor(r)) + ' /คืน') + '</span>' +
+          (role === 'admin' ? ' <a style="font-size:12px;" href="s24-room-settings.html' + qs + '">แก้ราคา</a>' : '') + '</div>' +
         actionLink('s05-tenant-lookup.html?flow=' + flow + '&room=' + r.number + qsAmp, actionLabel) +
       '</div>';
   } else if (r.state === 'reserved') {
@@ -68,7 +95,8 @@
           '<div><div class="section-title">เช็คอิน</div><div>' + (r.checkIn || '-') + '</div></div>' +
           '<div><div class="section-title">เช็คเอาท์</div><div>' + (r.checkOut || '-') + '</div></div>' +
         '</div>' +
-        '<div><span class="section-title">ราคา/คืน</span> <span class="money">' + D.money(r.nightlyRate || r.defaultNightly) + '</span></div>' +
+        '<div><span class="section-title">ราคา/คืน</span> <span class="money">' + D.money(r.nightlyRate || D.nightlyFor(r)) + '</span>' +
+          (r.rateOverridden ? ' <span class="override-note">ปรับราคาเฉพาะการจองนี้ (มาตรฐาน ' + D.money(D.nightlyFor(r)) + ')</span>' : '') + '</div>' +
       '</div>' +
       '<div class="card" style="display:flex; gap:10px; flex-wrap:wrap;">' +
         actionLink('s12-guest-registration.html?room=' + r.number + qsAmp, 'แขกมาถึงแล้ว') +
@@ -76,7 +104,10 @@
         actionBtn('btn-noshow', 'ไม่มาตามนัด (No-show)', 'btn-danger') +
       '</div>';
   } else if (r.rentalType === 'monthly') {
-    headCard += '<span class="status-badge badge-info">มีผู้เช่า</span></div>';
+    var c = D.contractOf(r);
+    headCard += '<span class="status-badge badge-info">มีผู้เช่า</span>' +
+      (c && c.expiringSoon ? '<span class="status-badge badge-warning">ใกล้ครบสัญญา (' + c.daysLeft + ' วัน)</span>' : '') +
+      '</div>';
     var phone = r.phone || '08X-XXX-XXXX';
     var startDate = r.startDate || '1 ม.ค. 69';
     var deposit = r.deposit != null ? r.deposit : r.defaultRent;
@@ -86,15 +117,31 @@
         '<h3>ข้อมูลผู้เช่า</h3>' +
         '<div class="tenant-chip monthly"><span class="tc-name">' + r.occupant + '</span><span class="tc-phone">' + phone + '</span></div>' +
         '<div class="grid-3">' +
-          '<div><div class="section-title">วันที่เริ่มเช่า</div><div>' + startDate + '</div></div>' +
+          '<div><div class="section-title">วันที่เริ่มเช่า</div><div>' + (c ? c.startLabel : startDate) + '</div></div>' +
           '<div><div class="section-title">ค่าเช่า/เดือน</div><div class="money">' + D.money(rent) + '</div></div>' +
           '<div><div class="section-title">เงินประกัน</div><div class="money">' + D.money(deposit) + '</div></div>' +
         '</div>' +
+        contractBlock(c, deposit) +
+        // Rule 10.3 consequence, stated on the room that received the transfer.
+        (r.transferredFrom && D.activeTransfer
+          ? '<div class="rule-note">ย้ายมาจากห้อง ' + r.transferredFrom + ' เมื่อ ' + D.activeTransfer.moveLabel +
+            ' — สัญญาและเงินประกันเดิม บิลเดือนนี้คิดค่าน้ำ-ไฟสองช่วง ' +
+            '<a href="s19-invoice-detail.html?invoice=' + D.activeTransfer.invoiceNumber + qsAmp + '">ดูบิล #' +
+            D.activeTransfer.invoiceNumber + '</a></div>'
+          : '') +
       '</div>' +
       '<div class="card" style="display:flex; gap:10px; flex-wrap:wrap;">' +
-        actionLink('s13-meter-reading.html?room=' + r.number + '&tenancy=' + (r.tenancyId || 'T-' + r.number) + qsAmp, 'จดมิเตอร์') +
-        actionLink('s18-invoice-list.html?room=' + r.number + qsAmp, 'ดูใบแจ้งหนี้', 'btn-secondary') +
-        actionBtn('btn-end-tenancy', 'สิ้นสุดสัญญา', 'btn-danger') +
+        // Renewal is a new contract (Rule 4.8) — promoted to primary once the
+        // 30-day window opens, since that is when it becomes the day's real task.
+        (role !== 'worker' && c
+          ? actionLink('s35-contract-renewal.html?room=' + r.number + qsAmp, 'ต่อสัญญา',
+              (c.expiringSoon || c.expired) ? 'btn-primary' : 'btn-secondary')
+          : '') +
+        actionLink('s13-meter-reading.html?room=' + r.number + '&tenancy=' + (r.tenancyId || 'T-' + r.number) + qsAmp,
+          'จดมิเตอร์', (c && (c.expiringSoon || c.expired)) ? 'btn-secondary' : 'btn-primary') +
+        actionLink('s19-invoice-detail.html?invoice=' + D.findInvoiceByRoom(r.number).number + qsAmp, 'ดูใบแจ้งหนี้', 'btn-secondary') +
+        (role !== 'worker' ? actionLink('s37-room-transfer.html?room=' + r.number + qsAmp, 'ย้ายห้อง', 'btn-secondary') : '') +
+        actionLink('s27-checkout-summary.html?room=' + r.number + qsAmp, 'ย้ายออก', 'btn-danger') +
       '</div>';
   } else {
     headCard += '<span class="status-badge badge-info">มีผู้เข้าพัก</span></div>';
@@ -107,13 +154,35 @@
           '<div><div class="section-title">เช็คอิน</div><div>' + (r.checkIn || '-') + '</div></div>' +
           '<div><div class="section-title">เช็คเอาท์ (กำหนด)</div><div>' + (r.checkOut || '-') + '</div></div>' +
         '</div>' +
+        '<div><span class="section-title">ราคา/คืน</span> <span class="money">' + D.money(r.nightlyRate || D.nightlyFor(r)) + '</span>' +
+          (r.rateOverridden ? ' <span class="override-note">ปรับราคาเฉพาะการจองนี้ (มาตรฐาน ' + D.money(D.nightlyFor(r)) + ')</span>' : '') + '</div>' +
       '</div>' +
       '<div class="card" style="display:flex; gap:10px; flex-wrap:wrap;">' +
-        actionBtn('btn-checkout', 'เช็คเอาท์', 'btn-primary') +
+        actionLink('s27-checkout-summary.html?room=' + r.number + qsAmp, 'เช็คเอาท์', 'btn-primary') +
+      '</div>';
+  }
+
+  // Staff-side maintenance flag (ADmin/Staff only — Worker has its own task list, S29) and
+  // the Admin-only room-type-change launch point the spec documents from S04 but was never
+  // wired (Master Document §10, S04 notes).
+  if (role !== 'worker') {
+    html += '<div class="card" style="display:flex; gap:10px; flex-wrap:wrap;">' +
+      actionBtn('btn-report-repair', 'แจ้งซ่อม', 'btn-secondary btn-sm') +
+      actionBtn('btn-report-clean', 'แจ้งทำความสะอาด', 'btn-secondary btn-sm') +
+      (role === 'admin' ? actionLink('s24-room-settings.html?room=' + r.number + qsAmp, 'ตั้งค่าห้อง / ราคา', 'btn-secondary btn-sm') : '') +
       '</div>';
   }
 
   body.innerHTML = html;
+
+  var repairBtn = document.getElementById('btn-report-repair');
+  if (repairBtn) repairBtn.addEventListener('click', function () {
+    alert('แจ้งซ่อมห้อง ' + r.number + ' แล้ว (สาธิต) — งานจะปรากฏในรายการงานของฝ่ายซ่อมบำรุง');
+  });
+  var cleanBtn = document.getElementById('btn-report-clean');
+  if (cleanBtn) cleanBtn.addEventListener('click', function () {
+    alert('แจ้งทำความสะอาดห้อง ' + r.number + ' แล้ว (สาธิต) — งานจะปรากฏในรายการงานของแม่บ้าน');
+  });
 
   function confirmThenGo(id, question, bannerMsg) {
     var btn = document.getElementById(id);
@@ -123,8 +192,6 @@
       location.href = 's02-dashboard.html?banner=' + encodeURIComponent(bannerMsg) + qsAmp;
     });
   }
-  confirmThenGo('btn-end-tenancy', 'ยืนยันสิ้นสุดสัญญาห้อง ' + r.number + '?', 'สิ้นสุดสัญญาห้อง ' + r.number + ' แล้ว');
-  confirmThenGo('btn-checkout', 'ยืนยันเช็คเอาท์ห้อง ' + r.number + '?', 'เช็คเอาท์ห้อง ' + r.number + ' เรียบร้อยแล้ว');
   confirmThenGo('btn-cancel', 'ยืนยันยกเลิกการจองห้อง ' + r.number + '?', 'ยกเลิกการจองห้อง ' + r.number + ' แล้ว');
   confirmThenGo('btn-noshow', 'บันทึกว่าแขกไม่มาตามนัด? เงินที่ชำระไว้ (ถ้ามี) จะถูกริบ', 'บันทึกไม่มาตามนัด ห้อง ' + r.number + ' แล้ว');
 </script>

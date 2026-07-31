@@ -1,0 +1,276 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S27 · สรุปย้ายออก/เช็คเอาท์ — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S27" data-title="สรุปย้ายออก/เช็คเอาท์">
+<div class="page-content" id="page-content">
+
+  <div class="page-header-row">
+    <a class="btn btn-ghost btn-sm" id="back-link" href="s04-room-detail.html">← รายละเอียดห้อง</a>
+  </div>
+
+  <div id="body"></div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var qsAmp = qs.replace(/^\?/, '&');
+  var params = new URLSearchParams(qs);
+  var roomNo = params.get('room') || '105';
+  var r = D.room(roomNo) || D.rooms[0];
+  var body = document.getElementById('body');
+
+  document.getElementById('back-link').href = 's04-room-detail.html?room=' + r.number + qsAmp;
+
+  var CLEANING_FEE = 300;
+
+  if (r.rentalType === 'monthly') {
+    // Move-out settlement: final meter reading -> final bill -> deposit settlement
+    // (floor-at-zero, never collects excess — CLAUDE.md rule #4). Itemized
+    // damage-deduction evidence/approval is Phase 2 (Master Document Phase Map);
+    // this only computes the total, per Business Rule 9.4.
+    var inv = D.invoice; // demo previous readings, reused the same way S13 does
+    var deposit = r.deposit != null ? r.deposit : r.defaultRent;
+    var rent = r.rent || r.defaultRent;
+    var c = D.contractOf(r);
+
+    function contractCard() {
+      if (!c) return '';
+      if (c.expired) {
+        return '<div class="card"><h3 style="font-size:14px;">สัญญาเช่า</h3>' +
+          '<p class="muted" style="font-size:13px;">ตกลงอยู่ ' + c.months + ' เดือน (' + c.startLabel + ' → ' + c.endLabel + ') — ' +
+          '<strong>ครบกำหนดแล้ว</strong> ย้ายออกตามปกติ ไม่ริบเงินประกัน</p></div>';
+      }
+      return '<div class="card"><h3 style="font-size:14px;">สัญญาเช่า</h3>' +
+        '<p class="muted" style="font-size:13px;">ตกลงอยู่ ' + c.months + ' เดือน (' + c.startLabel + ' → ' + c.endLabel + ') — ' +
+        'ยังเหลืออีก <strong>' + c.daysLeft + ' วัน</strong></p>' +
+        '<label class="mb-est" style="margin-top:8px; display:inline-flex; font-size:13px;">' +
+          '<input type="checkbox" id="forfeit-toggle"> ย้ายออกก่อนครบสัญญา — ริบเงินประกันทั้งหมด (กฎ 4.12)</label>' +
+        '<div class="rule-note" style="margin-top:8px;">ริบเงินประกันคือการผิดสัญญาของผู้เช่า ไม่ใช่ค่าปรับที่คำนวณจากจำนวนวัน — ' +
+        'เงินที่ริบจะกลายเป็นรายได้ (กฎ 8.4) และไม่มีการเรียกเก็บเพิ่มจากผู้เช่าที่ย้ายออกแล้ว</div></div>';
+    }
+    function isForfeited() {
+      var t = document.getElementById('forfeit-toggle');
+      return !!(t && t.checked);
+    }
+
+    body.innerHTML =
+      '<div class="card" style="display:flex; align-items:center; gap:14px;">' +
+        '<div style="font-size:22px; font-weight:700;">ย้ายออก — ห้อง ' + r.number + '</div>' +
+        '<span class="status-badge badge-neutral">รายเดือน</span>' +
+      '</div>' +
+      '<div class="card">' +
+        '<h3 style="font-size:14px;">เลขมิเตอร์สุดท้าย</h3>' +
+        '<p class="muted" style="font-size:12px; margin-bottom:10px;">ค่าก่อนหน้าเป็นค่าอ้างอิง แก้ไขไม่ได้ — เว้นว่างได้หากไม่ต้องคิดค่าน้ำ-ไฟรอบนี้</p>' +
+        '<div class="meter-entry-row" data-utility="electric">' +
+          '<div class="mer-room">⚡ ไฟฟ้า</div><div></div>' +
+          '<div class="mer-prev" id="e-prev"></div>' +
+          '<input type="number" class="mer-current" id="e-current" placeholder="เลขปัจจุบัน" step="1">' +
+          '<div class="mer-cost" id="e-cost">—</div><div></div>' +
+        '</div>' +
+        '<div class="meter-entry-row" data-utility="water">' +
+          '<div class="mer-room">💧 น้ำ</div><div></div>' +
+          '<div class="mer-prev" id="w-prev"></div>' +
+          '<input type="number" class="mer-current" id="w-current" placeholder="เลขปัจจุบัน" step="1">' +
+          '<div class="mer-cost" id="w-cost">—</div><div></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="money-math-card" style="max-width:420px;">' +
+        '<div class="mm-title">บิลสุดท้าย</div>' +
+        '<div class="mm-line"><span class="mm-label">ค่าเช่าห้อง (เดือนนี้)</span><span class="mm-amount">' + D.money(rent) + '</span></div>' +
+        '<div class="mm-line"><span class="mm-label">ค่าน้ำ-ไฟ</span><span class="mm-amount" id="final-utility">' + D.money(0) + '</span></div>' +
+        '<div class="mm-total"><span>รวมบิลสุดท้าย</span><span id="final-bill-total">' + D.money(rent) + '</span></div>' +
+      '</div>' +
+      contractCard() +
+      '<div class="money-math-card" style="max-width:420px;">' +
+        '<div class="mm-title">สรุปเงินประกัน</div>' +
+        '<div class="mm-line"><span class="mm-label">เงินประกัน</span><span class="mm-amount">' + D.money(deposit) + '</span></div>' +
+        '<div class="mm-line mm-minus"><span class="mm-label">หัก ค่าทำความสะอาด</span><span class="mm-amount">-' + D.money(CLEANING_FEE) + '</span></div>' +
+        '<div class="mm-line mm-minus">' +
+          '<span class="mm-label">หัก ค่าเสียหาย (ถ้ามี)</span>' +
+          '<span class="mm-amount"><input type="number" id="damage-amount" value="0" min="0" step="1" style="width:80px; text-align:right; font-family:var(--font-mono);"></span>' +
+        '</div>' +
+        '<div class="mm-line mm-minus"><span class="mm-label">หัก บิลสุดท้ายที่ค้างอยู่</span><span class="mm-amount" id="deduct-final-bill">-' + D.money(rent) + '</span></div>' +
+        '<div class="mm-line mm-late" id="forfeit-line" style="display:none;"><span class="mm-label">ริบเงินประกัน (ย้ายออกก่อนครบสัญญา)</span><span class="mm-amount">-' + D.money(deposit) + '</span></div>' +
+        '<div class="mm-line mm-struck" id="excess-line" style="display:none;"><span class="mm-label">ส่วนเกิน (ไม่เรียกเก็บ)</span><span class="mm-amount" id="excess-amount"></span></div>' +
+        '<div class="mm-total"><span>คืนเงินประกัน</span><span id="refund-total"></span></div>' +
+        '<div class="mm-note">คืนเงินประกันไม่เกินยอดเงินประกันที่วางไว้เสมอ — ไม่มีการเรียกเก็บส่วนเกินจากผู้เช่า</div>' +
+      '</div>' +
+      '<div class="card" style="display:flex; gap:10px; flex-wrap:wrap;">' +
+        '<button type="button" class="btn btn-primary" id="btn-confirm" data-primary>ยืนยันย้ายออก</button>' +
+      '</div>';
+
+    // Early termination (Rule 4.12): leaving before the agreed months forfeits
+    // the deposit. Staff must see the agreed term here, not recall it.
+    if (c && !c.expired) {
+      document.getElementById('forfeit-toggle').addEventListener('change', recalc);
+    }
+
+    document.getElementById('e-prev').textContent = inv.electric.prev;
+    document.getElementById('w-prev').textContent = inv.water.prev;
+
+    function recalc() {
+      var eCur = document.getElementById('e-current').value;
+      var wCur = document.getElementById('w-current').value;
+      var eCost = eCur !== '' ? Math.max(0, Number(eCur) - inv.electric.prev) * inv.electric.rate : 0;
+      var wCost = wCur !== '' ? Math.max(0, Number(wCur) - inv.water.prev) * inv.water.rate : 0;
+      document.getElementById('e-cost').textContent = eCur !== '' ? D.money(eCost) : '—';
+      document.getElementById('w-cost').textContent = wCur !== '' ? D.money(wCost) : '—';
+      var utility = eCost + wCost;
+      var finalBill = rent + utility;
+      document.getElementById('final-utility').textContent = D.money(utility);
+      document.getElementById('final-bill-total').textContent = D.money(finalBill);
+      document.getElementById('deduct-final-bill').textContent = '-' + D.money(finalBill);
+
+      var damage = parseFloat(document.getElementById('damage-amount').value) || 0;
+      var rawRefund = deposit - CLEANING_FEE - damage - finalBill;
+      var refund = Math.max(0, rawRefund);
+      var excessEl = document.getElementById('excess-line');
+      var forfeitEl = document.getElementById('forfeit-line');
+
+      // Early termination overrides the arithmetic entirely: the whole deposit is
+      // forfeited (Rule 4.12), it does not become a deduction line to net off.
+      if (isForfeited()) {
+        refund = 0;
+        forfeitEl.style.display = '';
+        excessEl.style.display = 'none';
+        document.getElementById('refund-total').textContent = D.money(0);
+        return 0;
+      }
+      forfeitEl.style.display = 'none';
+      document.getElementById('refund-total').textContent = D.money(refund);
+      if (rawRefund < 0) {
+        excessEl.style.display = '';
+        document.getElementById('excess-amount').textContent = D.money(Math.abs(rawRefund));
+      } else {
+        excessEl.style.display = 'none';
+      }
+      return refund;
+    }
+    ['e-current', 'w-current', 'damage-amount'].forEach(function (id) {
+      document.getElementById(id).addEventListener('input', recalc);
+    });
+    var currentRefund = recalc();
+
+    document.getElementById('btn-confirm').addEventListener('click', function (e) {
+      var btn = e.currentTarget;
+      var refund = recalc();
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner" aria-hidden="true"></span> กำลังบันทึก…';
+      setTimeout(function () {
+        location.href = 's02-dashboard.html?banner=' + encodeURIComponent(
+          'บันทึกย้ายออกห้อง ' + r.number + ' แล้ว — คืนเงินประกัน ' + D.money(refund) + ' — ห้องรอทำความสะอาด'
+        ) + qsAmp;
+      }, 700);
+    });
+
+  } else {
+    // Daily checkout: no meters (rule 6.4), room fee already paid at check-in (rule 5.4) —
+    // checkout only settles the key deposit (มัดจำกุญแจ, never merged with เงินประกัน per
+    // CLAUDE.md rule #5) and any late fees/extras.
+    var nightlyRate = r.nightlyRate || r.defaultNightly;
+    var nights = r.nights || 1;
+    var stayTotal = nightlyRate * nights;
+    var keyDeposit = 300;
+
+    body.innerHTML =
+      '<div class="card" style="display:flex; align-items:center; gap:14px;">' +
+        '<div style="font-size:22px; font-weight:700;">เช็คเอาท์ — ห้อง ' + r.number + '</div>' +
+        '<span class="status-badge badge-neutral">รายวัน</span>' +
+      '</div>' +
+      '<div class="money-math-card" style="max-width:420px;">' +
+        '<div class="mm-title">ยอดที่เข้าพัก (ชำระแล้วตอนเช็คอิน)</div>' +
+        '<div class="mm-line"><span class="mm-label">ค่าห้อง (' + nights + ' คืน × ' + D.money(nightlyRate) + ')</span><span class="mm-amount">' + D.money(stayTotal) + '</span></div>' +
+      '</div>' +
+      '<div class="card">' +
+        '<h3 style="font-size:14px;">คืนกุญแจ</h3>' +
+        '<div style="display:flex; gap:8px; margin-top:8px;">' +
+          '<button type="button" class="chip active" id="key-returned">คืนแล้ว</button>' +
+          '<button type="button" class="chip" id="key-not-returned">ยังไม่คืน</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="money-math-card" style="max-width:420px;">' +
+        '<div class="mm-title">สรุปมัดจำกุญแจ</div>' +
+        '<div class="mm-line"><span class="mm-label">มัดจำกุญแจ</span><span class="mm-amount">' + D.money(keyDeposit) + '</span></div>' +
+        '<div class="mm-line mm-minus" id="extra-line" style="display:none;"><span class="mm-label">หัก ค่าใช้จ่ายเพิ่มเติม</span><span class="mm-amount" id="extra-amount"></span></div>' +
+        '<div class="mm-total"><span id="key-total-label">คืนมัดจำกุญแจ</span><span id="key-total">' + D.money(keyDeposit) + '</span></div>' +
+        '<div class="mm-note" id="key-note">คืนมัดจำกุญแจทันทีเมื่อได้รับกุญแจคืนครบ</div>' +
+      '</div>' +
+      '<div class="card" style="display:flex; flex-direction:column; gap:8px;">' +
+        '<label class="section-title">ค่าใช้จ่ายเพิ่มเติม (ถ้ามี — หักจากมัดจำกุญแจ)</label>' +
+        '<input type="number" id="extra-amount-input" value="0" min="0" step="1" style="max-width:160px;">' +
+      '</div>' +
+      '<div class="card" style="display:flex; gap:10px; flex-wrap:wrap;">' +
+        '<button type="button" class="btn btn-primary" id="btn-confirm" data-primary>ยืนยันเช็คเอาท์</button>' +
+      '</div>';
+
+    var keyReturned = true;
+    function recalcDaily() {
+      var extra = parseFloat(document.getElementById('extra-amount-input').value) || 0;
+      var extraLine = document.getElementById('extra-line');
+      var refund;
+      if (!keyReturned) {
+        document.getElementById('key-total-label').textContent = 'ริบมัดจำกุญแจ (ไม่คืนกุญแจ)';
+        extraLine.style.display = 'none';
+        refund = 0;
+        document.getElementById('key-note').textContent = 'ไม่ได้รับกุญแจคืน — ริบมัดจำกุญแจทั้งหมด';
+      } else {
+        document.getElementById('key-total-label').textContent = 'คืนมัดจำกุญแจ';
+        refund = Math.max(0, keyDeposit - extra);
+        if (extra > 0) {
+          extraLine.style.display = '';
+          document.getElementById('extra-amount').textContent = '-' + D.money(extra);
+        } else {
+          extraLine.style.display = 'none';
+        }
+        document.getElementById('key-note').textContent = 'คืนมัดจำกุญแจไม่เกินยอดที่วางไว้เสมอ';
+      }
+      document.getElementById('key-total').textContent = D.money(refund);
+      return refund;
+    }
+    document.getElementById('key-returned').addEventListener('click', function () {
+      keyReturned = true;
+      document.getElementById('key-returned').classList.add('active');
+      document.getElementById('key-not-returned').classList.remove('active');
+      recalcDaily();
+    });
+    document.getElementById('key-not-returned').addEventListener('click', function () {
+      keyReturned = false;
+      document.getElementById('key-not-returned').classList.add('active');
+      document.getElementById('key-returned').classList.remove('active');
+      recalcDaily();
+    });
+    document.getElementById('extra-amount-input').addEventListener('input', recalcDaily);
+    recalcDaily();
+
+    document.getElementById('btn-confirm').addEventListener('click', function (e) {
+      var refund = recalcDaily();
+      var btn = e.currentTarget;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner" aria-hidden="true"></span> กำลังบันทึก…';
+      setTimeout(function () {
+        var msg = keyReturned
+          ? 'เช็คเอาท์ห้อง ' + r.number + ' แล้ว — คืนมัดจำกุญแจ ' + D.money(refund)
+          : 'เช็คเอาท์ห้อง ' + r.number + ' แล้ว — ริบมัดจำกุญแจ (ไม่ได้รับกุญแจคืน)';
+        location.href = 's02-dashboard.html?banner=' + encodeURIComponent(msg) + qsAmp;
+      }, 700);
+    });
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S32 · คำถาม/จองห้อง — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S32" data-title="คำถาม/จองห้อง">
+<div class="page-content" id="page-content">
+
+  <div class="card" style="max-width:480px;">
+    <h3>บันทึกคำถาม / ความสนใจจองห้อง</h3>
+    <p class="muted" style="font-size:12px; margin-bottom:10px;">
+      แนวคิดสำหรับติดตามผู้ที่สอบถามแต่ยังไม่จอง — ยังไม่มี API รองรับในเฟส 1
+      (Master Document §15: "no API endpoint — maps to a future Phase 2 CRM feature or stays
+      a no-backend UI element"). หน้านี้เป็นแบบร่างให้ดูรูปแบบเท่านั้น กดบันทึกแล้วจะไม่มีการเก็บข้อมูลจริง.
+    </p>
+
+    <form id="inquiry-form" class="form-grid">
+      <div class="field full">
+        <label>ชื่อผู้สอบถาม <span class="req">*</span></label>
+        <input type="text" id="inq-name" placeholder="เช่น คุณสมหญิง">
+      </div>
+      <div class="field full">
+        <label>เบอร์โทร <span class="req">*</span></label>
+        <input type="tel" id="inq-phone" placeholder="08X-XXX-XXXX">
+      </div>
+      <div class="field full">
+        <label>สนใจห้องแบบไหน</label>
+        <select id="inq-type">
+          <option value="monthly">รายเดือน</option>
+          <option value="daily">รายวัน</option>
+          <option value="unsure">ยังไม่แน่ใจ</option>
+        </select>
+      </div>
+      <div class="field full">
+        <label>บันทึกเพิ่มเติม</label>
+        <input type="text" id="inq-note" placeholder="เช่น ต้องการเข้าอยู่ต้นเดือนหน้า">
+      </div>
+      <div class="field full" style="flex-direction:row; gap:10px; margin-top:6px;">
+        <button type="submit" class="btn btn-primary" data-primary>บันทึกคำถาม (สาธิต)</button>
+        <a class="btn btn-secondary" href="s02-dashboard.html">ยกเลิก</a>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var form = document.getElementById('inquiry-form');
+  Demo.submitWithSpinner(form, function (e, restore) {
+    var name = document.getElementById('inq-name').value.trim();
+    var phone = document.getElementById('inq-phone').value.trim();
+    if (!name || !phone) { restore(); return; }
+    location.href = 's02-dashboard.html?banner=' + encodeURIComponent('บันทึกคำถามของ ' + name + ' แล้ว (สาธิต — ยังไม่มีระบบติดตามจริง)');
+  }, 500);
+</script>
+</body>
+</html>

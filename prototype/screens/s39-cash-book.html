@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S39 · บัญชีรายรับ-รายจ่าย — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S39" data-title="บัญชีรายรับ-รายจ่าย">
+<div class="page-content" id="page-content">
+
+  <div data-admin-only>
+    <div class="card">
+      <div class="page-header-row">
+        <div>
+          <h3 style="margin:0;">บัญชีรายรับ-รายจ่าย — กรกฎาคม 2569</h3>
+          <p class="muted" style="font-size:12px; margin-top:4px;">เงินเข้า–เงินออกจริง (cash book) ไม่ใช่บัญชีค้างรับค้างจ่าย</p>
+        </div>
+        <div class="spacer"></div>
+        <a class="btn btn-secondary" href="s40-reports.html" id="report-link">ดูรายงานสรุป →</a>
+        <button type="button" class="btn btn-primary" id="btn-add">+ บันทึกรายการ</button>
+      </div>
+      <div class="kpi-row" id="kpi-row" style="margin-top:14px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="settings-filters" style="margin-bottom:14px;">
+        <div class="sf-group">
+          <span class="sf-label">แสดง</span>
+          <div class="floor-jump" id="f-kind">
+            <button type="button" data-v="all" class="active">ทั้งหมด</button>
+            <button type="button" data-v="income">รายรับ</button>
+            <button type="button" data-v="expense">รายจ่าย</button>
+          </div>
+        </div>
+        <div class="sf-group">
+          <span class="sf-label">วิธีรับ/จ่าย</span>
+          <div class="floor-jump" id="f-method">
+            <button type="button" data-v="all" class="active">ทั้งหมด</button>
+            <button type="button" data-v="cash">เงินสด</button>
+            <button type="button" data-v="transfer">โอน</button>
+          </div>
+        </div>
+        <label class="mb-est" style="font-size:13px;"><input type="checkbox" id="show-deleted"> แสดงรายการที่ลบแล้ว</label>
+      </div>
+
+      <table class="data-table">
+        <thead><tr>
+          <th style="width:100px;">วันที่</th>
+          <th style="width:170px;">หมวด</th>
+          <th>รายการ</th>
+          <th style="width:90px;">วิธี</th>
+          <th style="width:110px;">บันทึกโดย</th>
+          <th class="td-money" style="width:130px;">จำนวน</th>
+          <th style="width:70px;"></th>
+        </tr></thead>
+        <tbody id="entry-rows"></tbody>
+      </table>
+      <div class="muted" style="font-size:12px; margin-top:10px;" id="list-summary"></div>
+    </div>
+  </div>
+
+  <div class="card" id="no-access-card" style="display:none;">
+    <p>หน้านี้สำหรับเจ้าของและพนักงานที่ได้รับสิทธิ์ "บันทึก/แก้รายจ่าย" เท่านั้น</p>
+  </div>
+
+</div>
+
+<!-- Add entry -->
+<div class="modal-overlay" id="entry-modal" aria-hidden="true">
+  <div class="modal-box">
+    <h2>บันทึกรายการ</h2>
+    <form id="entry-form" class="form-grid">
+      <div class="field full">
+        <label>ประเภท <span class="req">*</span></label>
+        <div class="floor-jump" id="kind-pick">
+          <button type="button" data-v="expense" class="active">− รายจ่าย</button>
+          <button type="button" data-v="income">+ รายรับ</button>
+        </div>
+      </div>
+      <div class="field full">
+        <label>หมวด <span class="req">*</span></label>
+        <select id="e-cat"></select>
+      </div>
+      <div class="field full">
+        <label>รายละเอียด <span class="req">*</span></label>
+        <input type="text" id="e-label" placeholder="เช่น ค่าไฟฟ้า รอบ ก.ค.">
+      </div>
+      <div class="field">
+        <label>จำนวนเงิน (บาท) <span class="req">*</span></label>
+        <input type="number" id="e-amount" min="0" step="10">
+      </div>
+      <div class="field">
+        <label>วันที่ <span class="req">*</span></label>
+        <input type="date" id="e-date">
+      </div>
+      <div class="field full">
+        <label>วิธีรับ/จ่าย <span class="req">*</span></label>
+        <select id="e-method"></select>
+      </div>
+      <div class="field full">
+        <div class="slip-viewer" id="receipt-slot" style="min-height:90px; cursor:pointer;">แนบรูปใบเสร็จ (ไม่บังคับ)</div>
+      </div>
+      <div class="field full">
+        <div class="error" id="entry-error" style="display:none;">กรุณากรอกรายละเอียดและจำนวนเงิน</div>
+        <div class="rule-note">ผู้บันทึกถูกเก็บอัตโนมัติ — รายการที่ลบจะยังแสดงอยู่แบบขีดฆ่า ไม่หายไปเงียบๆ</div>
+      </div>
+      <div class="modal-actions" style="grid-column:1/-1;">
+        <button type="button" class="btn btn-secondary" id="entry-cancel">ยกเลิก</button>
+        <button type="submit" class="btn btn-primary" data-primary>บันทึก</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Delete (owner only, reason required, never silent) -->
+<div class="modal-overlay" id="delete-modal" aria-hidden="true">
+  <div class="modal-box">
+    <h2>ลบรายการ</h2>
+    <div class="dialog-what" id="del-what"></div>
+    <div class="field full">
+      <label>เหตุผลที่ลบ <span class="req">*</span></label>
+      <input type="text" id="del-reason" placeholder="เช่น บันทึกซ้ำ, ใส่ยอดผิด">
+      <div class="error" id="del-error" style="display:none;">กรุณาระบุเหตุผล</div>
+    </div>
+    <div class="rule-note">รายการจะยังอยู่ในบัญชีแบบขีดฆ่า พร้อมชื่อผู้ลบและเหตุผล — ลบได้เฉพาะเจ้าของ (กฎ 13.4)</div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="del-cancel">ยกเลิก</button>
+      <button type="button" class="btn btn-danger" id="del-confirm">ยืนยันลบ</button>
+    </div>
+  </div>
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var role = window.AmanewRole ? window.AmanewRole.current() : 'admin';
+  var filters = { kind: 'all', method: 'all', showDeleted: false };
+  var newKind = 'expense';
+  var deletingId = null;
+
+  document.getElementById('report-link').href = 's40-reports.html' + qs;
+
+  function visibleEntries() {
+    return D.cashEntries.filter(function (e) {
+      return (filters.showDeleted || !e.deleted) &&
+             (filters.kind === 'all' || e.kind === filters.kind) &&
+             (filters.method === 'all' || e.method === filters.method);
+    });
+  }
+
+  function renderKpis() {
+    var t = D.cashTotals(D.cashEntries);
+    var today = D.cashTotals(D.cashEntries.filter(function (e) { return e.day === 31; }));
+    document.getElementById('kpi-row').innerHTML =
+      '<div class="kpi-tile kpi-success"><div class="kpi-num">' + D.money(t.income) + '</div><div class="kpi-label">รายรับเดือนนี้</div></div>' +
+      '<div class="kpi-tile kpi-warning"><div class="kpi-num">' + D.money(t.expense) + '</div><div class="kpi-label">รายจ่ายเดือนนี้</div></div>' +
+      '<div class="kpi-tile kpi-primary"><div class="kpi-num">' + D.money(t.net) + '</div><div class="kpi-label">คงเหลือสุทธิ</div></div>' +
+      '<div class="kpi-tile"><div class="kpi-num">' + D.money(today.net) + '</div><div class="kpi-label">วันนี้ (31 ก.ค. 69)</div></div>';
+  }
+
+  function renderRows() {
+    var list = visibleEntries();
+    document.getElementById('entry-rows').innerHTML = list.map(function (e) {
+      var sign = e.kind === 'income' ? '+' : '−';
+      var color = e.kind === 'income' ? 'var(--success)' : 'var(--danger)';
+      return '<tr' + (e.deleted ? ' style="opacity:.6;"' : '') + '>' +
+        '<td class="td-muted">' + e.date + '</td>' +
+        '<td><span class="status-badge ' + (e.kind === 'income' ? 'badge-success' : 'badge-warning') + '">' + D.catLabel(e) + '</span></td>' +
+        '<td' + (e.deleted ? ' style="text-decoration:line-through;"' : '') + '>' + e.label +
+          (e.receipt ? ' <span class="muted" style="font-size:11px;">📎 มีใบเสร็จ</span>' : '') +
+          (e.deleted ? '<div class="override-note">ลบโดย ' + e.deletedBy + ' ' + e.deletedAt + ' — ' + e.deletedReason + '</div>' : '') +
+        '</td>' +
+        '<td class="td-muted">' + (D.PAYMENT_METHODS.filter(function (m) { return m.key === e.method; })[0] || {}).label + '</td>' +
+        '<td class="td-muted">' + e.by + '</td>' +
+        '<td class="td-money"' + (e.deleted ? ' style="text-decoration:line-through; color:var(--text-muted);"' : ' style="color:' + color + ';"') + '>' +
+          sign + D.money(e.amount) + '</td>' +
+        '<td>' + (!e.deleted && role === 'admin'
+          ? '<button type="button" class="btn btn-ghost btn-sm" data-del="' + e.id + '">ลบ</button>' : '') + '</td>' +
+      '</tr>';
+    }).join('');
+
+    var t = D.cashTotals(list);
+    document.getElementById('list-summary').textContent =
+      'แสดง ' + list.length + ' รายการ · รายรับ ' + D.money(t.income) + ' · รายจ่าย ' + D.money(t.expense) + ' · สุทธิ ' + D.money(t.net) +
+      (role === 'admin' ? '' : ' — เฉพาะเจ้าของเท่านั้นที่ลบรายการได้ (กฎ 13.4)');
+
+    document.querySelectorAll('[data-del]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        deletingId = btn.dataset.del;
+        var e = D.cashEntries.filter(function (x) { return x.id === deletingId; })[0];
+        document.getElementById('del-what').textContent = e.label + ' · ' + D.money(e.amount) + ' (' + e.date + ')';
+        document.getElementById('del-reason').value = '';
+        document.getElementById('del-error').style.display = 'none';
+        Demo.openDialog('delete-modal', btn);
+      });
+    });
+  }
+
+  function bindFilter(id, key) {
+    document.getElementById(id).addEventListener('click', function (e) {
+      var btn = e.target.closest('button[data-v]');
+      if (!btn) return;
+      document.querySelectorAll('#' + id + ' button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+      filters[key] = btn.dataset.v;
+      renderRows();
+    });
+  }
+  bindFilter('f-kind', 'kind');
+  bindFilter('f-method', 'method');
+  document.getElementById('show-deleted').addEventListener('change', function () {
+    filters.showDeleted = this.checked;
+    renderRows();
+  });
+
+  /* ---- Add entry ---- */
+  function fillCats() {
+    var list = newKind === 'income' ? D.INCOME_SOURCES : D.EXPENSE_CATEGORIES;
+    document.getElementById('e-cat').innerHTML = list.map(function (c) {
+      return '<option value="' + c.key + '">' + c.label + '</option>';
+    }).join('');
+  }
+  document.getElementById('e-method').innerHTML = D.PAYMENT_METHODS.map(function (m) {
+    return '<option value="' + m.key + '">' + m.label + '</option>';
+  }).join('');
+  document.getElementById('kind-pick').addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-v]');
+    if (!btn) return;
+    document.querySelectorAll('#kind-pick button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+    newKind = btn.dataset.v;
+    fillCats();
+  });
+  fillCats();
+
+  var receiptAttached = false;
+  document.getElementById('receipt-slot').addEventListener('click', function () {
+    receiptAttached = !receiptAttached;
+    this.textContent = receiptAttached ? '✓ แนบใบเสร็จแล้ว (สาธิต)' : 'แนบรูปใบเสร็จ (ไม่บังคับ)';
+    this.style.color = receiptAttached ? 'var(--success)' : '';
+  });
+
+  document.getElementById('btn-add').addEventListener('click', function (e) {
+    document.getElementById('e-date').value = D.isoDate(D.TODAY);
+    Demo.openDialog('entry-modal', e.currentTarget);
+  });
+  document.getElementById('entry-cancel').addEventListener('click', function () { Demo.closeDialog('entry-modal'); });
+
+  Demo.submitWithSpinner(document.getElementById('entry-form'), function (e, restore) {
+    var label = document.getElementById('e-label').value.trim();
+    var amount = parseFloat(document.getElementById('e-amount').value);
+    if (!label || isNaN(amount) || amount <= 0) {
+      document.getElementById('entry-error').style.display = 'block';
+      restore();
+      return;
+    }
+    var d = D.parseISO(document.getElementById('e-date').value);
+    D.cashEntries.unshift({
+      id: 'C-' + (D.cashEntries.length + 1), date: D.thaiDate(d), day: d.getDate(),
+      kind: newKind, cat: document.getElementById('e-cat').value, label: label, amount: amount,
+      method: document.getElementById('e-method').value,
+      by: role === 'admin' ? 'เจ้าของ' : 'พนักงาน (เดโม)', receipt: receiptAttached
+    });
+    restore();
+    Demo.closeDialog('entry-modal');
+    document.getElementById('e-label').value = '';
+    document.getElementById('e-amount').value = '';
+    renderKpis();
+    renderRows();
+  }, 500);
+
+  /* ---- Delete (owner only) ---- */
+  document.getElementById('del-cancel').addEventListener('click', function () { Demo.closeDialog('delete-modal'); });
+  document.getElementById('del-confirm').addEventListener('click', function () {
+    var reason = document.getElementById('del-reason').value.trim();
+    if (!reason) { document.getElementById('del-error').style.display = 'block'; return; }
+    var e = D.cashEntries.filter(function (x) { return x.id === deletingId; })[0];
+    e.deleted = true; e.deletedBy = 'เจ้าของ'; e.deletedAt = D.thaiDate(D.TODAY); e.deletedReason = reason;
+    Demo.closeDialog('delete-modal');
+    renderKpis();
+    renderRows();
+  });
+
+  renderKpis();
+  renderRows();
+
+  if (role === 'worker') {
+    document.getElementById('no-access-card').style.display = 'block';
+  }
+</script>
+</body>
+</html>

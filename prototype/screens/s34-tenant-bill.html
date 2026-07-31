@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S34 · ใบแจ้งหนี้ของฉัน — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .past-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .past-row:last-child { border-bottom: none; }
+</style>
+</head>
+<body data-style="a">
+<div class="phone-stage">
+  <div class="phone-frame">
+    <div class="phone-header">
+      <a class="btn btn-ghost btn-sm" href="s33-tenant-home.html">←</a>
+      <span>ใบแจ้งหนี้ของฉัน</span>
+      <div class="spacer" style="flex:1;"></div>
+      <span class="screen-id">S34 · บิลผู้เช่า</span>
+    </div>
+    <div class="phone-body">
+
+      <div class="invoice-card" id="invoice-card"></div>
+
+      <div class="card">
+        <h3 style="font-size:14px;">ประวัติบิลย้อนหลัง</h3>
+        <div id="past-list"></div>
+      </div>
+
+      <div class="demo-note">หน้านี้เป็นแอปแยกสำหรับผู้เช่า — ไม่ใช้เมนู/แถบด้านข้างของฝั่งพนักงาน</div>
+    </div>
+  </div>
+</div>
+
+<script src="../switcher.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script>
+  var D = window.AmanewData;
+  var th = D.tenantHome;
+  var inv = th.currentInvoice;
+  var STATUS_LABEL = {
+    unpaid: ['ค้างชำระ', 'badge-danger'], pending_verification: ['รอตรวจสอบ', 'badge-warning'],
+    paid: ['ชำระแล้ว', 'badge-success'], rejected: ['ถูกปฏิเสธ', 'badge-neutral']
+  };
+
+  var s = STATUS_LABEL[inv.status];
+  document.getElementById('invoice-card').innerHTML =
+    '<div class="ic-head"><h3>ใบแจ้งหนี้ #' + inv.number + '</h3><span class="status-badge ' + s[1] + '">' + s[0] + '</span></div>' +
+    '<div class="ic-line"><span class="ic-desc">ค่าเช่าห้อง</span><span class="ic-amt">' + D.money(inv.roomCharge) + '</span></div>' +
+    (inv.utilityPeriods
+      ? (inv.transferNote ? '<div class="transfer-note">↪ ' + inv.transferNote + '</div>' : '') +
+        inv.utilityPeriods.map(function (p) {
+          return '<div class="util-period">' +
+            '<div class="up-head">ค่าน้ำ-ไฟ · <span class="up-room">ห้อง ' + p.room + '</span> ' + p.fromLabel + ' – ' + p.toLabel + '</div>' +
+            '<div class="ic-line"><span class="ic-desc">ค่าไฟฟ้า (' + p.electric.units + ' หน่วย)</span><span class="ic-amt">' + D.money(p.electric.cost) + '</span></div>' +
+            '<div class="ic-line"><span class="ic-desc">ค่าน้ำ (' + p.water.units + ' หน่วย)</span><span class="ic-amt">' + D.money(p.water.cost) + '</span></div>' +
+          '</div>';
+        }).join('')
+      : inv.electric && inv.water
+        ? '<div class="ic-line"><span class="ic-desc">ค่าไฟฟ้า (' + inv.electric.units + ' หน่วย × ' + D.money(inv.electric.rate) + ')</span><span class="ic-amt">' + D.money(inv.electric.cost) + '</span></div>' +
+          '<div class="ic-line"><span class="ic-desc">ค่าน้ำ (' + inv.water.units + ' หน่วย × ' + D.money(inv.water.rate) + ')</span><span class="ic-amt">' + D.money(inv.water.cost) + '</span></div>'
+        : '<div class="ic-line"><span class="ic-desc">ค่าน้ำ-ไฟ</span><span class="ic-amt">' + D.money(inv.utilitySubtotal) + '</span></div>') +
+    (inv.lateFeeFrozen ? '<div class="ic-line ic-late"><span class="ic-desc">ค่าปรับล่าช้า</span><span class="ic-amt">' + D.money(inv.lateFeeFrozen) + '</span></div>' : '') +
+    '<div class="ic-total"><span>รวมทั้งสิ้น</span><span>' + D.money(inv.total) + '</span></div>' +
+    '<p class="muted" style="font-size:12px; margin:6px 0 0;">ครบกำหนด ' + inv.dueDate + '</p>';
+
+  var past = D.invoiceList.filter(function (i) { return i.room === th.room && i.number !== inv.number; });
+  document.getElementById('past-list').innerHTML = past.length
+    ? past.map(function (i) {
+        var ps = STATUS_LABEL[i.status] || ['-', 'badge-neutral'];
+        return '<div class="past-row"><span>#' + i.number + ' — ' + i.dueDate + '</span>' +
+          '<span class="status-badge sm ' + ps[1] + '">' + ps[0] + '</span></div>';
+      }).join('')
+    : '<p class="muted" style="font-size:13px;">ยังไม่มีบิลย้อนหลัง</p>';
+</script>
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S35 · ต่อสัญญา — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S35" data-title="ต่อสัญญา">
+<div class="page-content" id="page-content">
+
+  <div id="renew-body" style="display:none;">
+    <a class="btn btn-ghost btn-sm" id="back-link" href="s04-room-detail.html">← รายละเอียดห้อง</a>
+
+    <!-- Current contract, read-only. Renewal is a NEW contract (Rule 4.8), so the
+         old one is shown as the thing being closed, not as fields to edit. -->
+    <div class="card">
+      <div class="page-header-row">
+        <h3 style="margin:0;">สัญญาปัจจุบัน — ห้อง <span id="room-label"></span></h3>
+        <div class="spacer"></div>
+        <span id="expiry-badge"></span>
+      </div>
+      <div class="tenant-chip monthly" style="margin:12px 0;">
+        <span class="tc-name" id="t-name"></span><span class="tc-phone" id="t-phone"></span>
+      </div>
+      <div class="grid-3">
+        <div><div class="section-title">ระยะสัญญา</div><div id="cur-months"></div></div>
+        <div><div class="section-title">ช่วงสัญญา</div><div id="cur-range" style="font-family:var(--font-mono); font-size:13px;"></div></div>
+        <div><div class="section-title">ค่าเช่า/เดือน (ล็อกไว้)</div><div class="money" id="cur-rent"></div></div>
+      </div>
+    </div>
+
+    <div class="card" style="max-width:560px;">
+      <h3>สัญญาใหม่</h3>
+      <div class="rule-note" style="margin-bottom:14px;">
+        ต่อสัญญา = <strong>ทำสัญญาใหม่</strong> ไม่ใช่การขยายสัญญาเดิม — สัญญาเดิมปิดที่วันสิ้นสุด
+        สัญญาใหม่เริ่มวันถัดไป <strong>เงินประกันยกยอดมา ไม่เก็บเพิ่ม</strong> และไม่มีการต่ออัตโนมัติ (กฎ 4.8)
+      </div>
+
+      <form id="renew-form" class="form-grid">
+        <div class="field">
+          <label>วันที่เริ่มสัญญาใหม่ <span class="req">*</span></label>
+          <input type="date" id="new-start" required>
+          <div class="hint" id="start-hint"></div>
+        </div>
+        <div class="field">
+          <label>ตกลงอยู่กี่เดือน <span class="req">*</span></label>
+          <select id="new-months" required></select>
+        </div>
+        <div class="field full" id="custom-months-slot" style="display:none;">
+          <label>ระบุจำนวนเดือน <span class="req">*</span></label>
+          <input type="number" id="custom-months" min="1" max="60" step="1" placeholder="เช่น 9">
+        </div>
+        <div class="field prefilled">
+          <label>สัญญาใหม่สิ้นสุด (คำนวณอัตโนมัติ)</label>
+          <input type="text" id="new-end" disabled>
+        </div>
+        <!-- Rule 4.8: rent may change at renewal — this is the one legitimate moment
+             to set a new figure. It then freezes again for the new contract (4.5). -->
+        <div class="field prefilled" id="rent-field">
+          <label>ค่าเช่า/เดือน (สัญญาใหม่)</label>
+          <input type="number" id="new-rent" min="0" step="100" required readonly>
+          <div class="hint" id="rent-hint"></div>
+        </div>
+        <div class="field prefilled">
+          <label>เงินประกัน (ยกยอดจากสัญญาเดิม)</label>
+          <input type="text" id="carried-deposit" disabled>
+          <div class="hint">ไม่เก็บเงินประกันใหม่ — ยอดเดิมถือต่อในสัญญาใหม่</div>
+        </div>
+
+        <div class="field full">
+          <div class="demo-note" id="meter-note">
+            ไม่ต้องจดมิเตอร์เริ่มต้นใหม่ — ผู้เช่าคนเดิมอยู่ต่อ เลขมิเตอร์เดินต่อเนื่อง
+            (การจดมิเตอร์ใหม่ใช้เฉพาะตอนผู้เช่า<strong>รายใหม่</strong>ย้ายเข้า กฎ 4.4)
+          </div>
+        </div>
+        <div class="field full">
+          <div class="rule-note" id="term-note"></div>
+        </div>
+
+        <div class="field full" style="flex-direction:row; gap:10px; margin-top:6px;">
+          <button type="submit" class="btn btn-primary" data-primary>ยืนยันต่อสัญญา</button>
+          <a class="btn btn-secondary" href="s04-room-detail.html" id="cancel-link">ยกเลิก</a>
+        </div>
+      </form>
+      <div class="demo-note" style="margin-top:12px;">การต่อสัญญาถูกบันทึกในประวัติ (audit log) — ต้องมีสิทธิ์ "ย้ายห้อง · แก้ไขผู้เช่า"</div>
+    </div>
+  </div>
+
+  <div class="card" id="not-applicable" style="display:none;">
+    <p id="na-msg"></p>
+    <a class="btn btn-secondary" href="s02-dashboard.html" id="na-back">กลับแดชบอร์ด</a>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var qsAmp = qs.replace(/^\?/, '&');
+  var params = new URLSearchParams(qs);
+  var roomNo = params.get('room') || '210';
+  var r = D.room(roomNo);
+  var c = r ? D.contractOf(r) : null;
+  var role = window.AmanewRole ? window.AmanewRole.current() : 'admin';
+
+  // Renewal only exists for an occupied monthly room with a contract on file.
+  if (!r || r.rentalType !== 'monthly' || r.state !== 'occupied' || !c || role === 'worker') {
+    document.getElementById('not-applicable').style.display = 'block';
+    document.getElementById('na-msg').textContent = role === 'worker'
+      ? 'หน้านี้สำหรับผู้ดูแลระบบและพนักงานที่มีสิทธิ์แก้ไขผู้เช่าเท่านั้น'
+      : 'ห้องนี้ไม่มีสัญญาเช่ารายเดือนที่ต่อได้';
+    document.getElementById('na-back').href = 's02-dashboard.html' + qs;
+  } else {
+    build();
+  }
+
+  function build() {
+    document.getElementById('renew-body').style.display = 'block';
+    document.getElementById('back-link').href = 's04-room-detail.html?room=' + roomNo + qsAmp;
+    document.getElementById('cancel-link').href = 's04-room-detail.html?room=' + roomNo + qsAmp;
+
+    var deposit = r.deposit != null ? r.deposit : D.rentFor(r);
+    var currentRent = r.rent || D.rentFor(r);
+    var standardRent = D.rentFor(r);
+
+    document.getElementById('room-label').textContent = r.number;
+    document.getElementById('t-name').textContent = r.occupant;
+    document.getElementById('t-phone').textContent = r.phone || '08X-XXX-XXXX';
+    document.getElementById('cur-months').textContent = c.months + ' เดือน';
+    document.getElementById('cur-range').textContent = c.startLabel + ' → ' + c.endLabel;
+    document.getElementById('cur-rent').textContent = D.money(currentRent);
+    document.getElementById('carried-deposit').value = D.money(deposit) + ' (ยกยอดมา)';
+
+    document.getElementById('expiry-badge').innerHTML = c.expired
+      ? '<span class="status-badge badge-danger">ครบกำหนดแล้ว</span>'
+      : c.expiringSoon
+        ? '<span class="status-badge badge-warning">เหลืออีก ' + c.daysLeft + ' วัน</span>'
+        : '<span class="status-badge badge-success">เหลืออีก ' + c.monthsLeft + ' เดือน</span>';
+
+    // New contract starts the day after the current one ends — renewing early is
+    // allowed, but it never overlaps the contract still running.
+    var newStart = D.addMonths(new Date(r.contract.end.getTime()), 0);
+    newStart.setDate(newStart.getDate() + 1);
+    document.getElementById('new-start').value = D.isoDate(newStart);
+    document.getElementById('start-hint').textContent = c.expired
+      ? 'สัญญาเดิมครบกำหนดแล้ว — เริ่มสัญญาใหม่ได้ทันที'
+      : 'ค่าเริ่มต้น = วันถัดจากสัญญาเดิมสิ้นสุด (' + c.endLabel + ') — ต่อสัญญาล่วงหน้าได้ สัญญาใหม่จะไม่ทับสัญญาเดิม';
+
+    var monthsSelect = document.getElementById('new-months');
+    monthsSelect.innerHTML = D.AGREED_MONTH_OPTIONS.map(function (m) {
+      return '<option value="' + m + '"' + (m === c.months ? ' selected' : '') + '>' + m + ' เดือน</option>';
+    }).join('') + '<option value="custom">อื่นๆ (ระบุเอง)</option>';
+
+    var rentInput = document.getElementById('new-rent');
+    var rentChanged = false;
+    rentInput.value = currentRent;
+
+    function agreedMonths() {
+      if (monthsSelect.value === 'custom') return Number(document.getElementById('custom-months').value) || 0;
+      return Number(monthsSelect.value);
+    }
+
+    function renderRentHint() {
+      var diff = standardRent !== Number(rentInput.value);
+      var base = 'ค่าเช่าสัญญาเดิม ' + D.money(currentRent) + '/เดือน · ราคามาตรฐานตอนนี้ ' + D.money(standardRent) + '/เดือน';
+      if (rentChanged) {
+        document.getElementById('rent-hint').innerHTML = base +
+          ' · <span class="override-note">ปรับค่าเช่าในสัญญาใหม่ — บันทึกในประวัติ</span>' +
+          ' · <a href="#" id="rent-reset">กลับไปใช้ค่าเช่าเดิม</a>';
+        document.getElementById('rent-reset').addEventListener('click', function (ev) {
+          ev.preventDefault();
+          rentChanged = false;
+          rentInput.readOnly = true;
+          rentInput.value = currentRent;
+          document.getElementById('rent-field').classList.add('prefilled');
+          renderRentHint();
+          renderTerm();
+        });
+        return;
+      }
+      document.getElementById('rent-hint').innerHTML = base +
+        (role === 'admin'
+          ? ' · <a href="#" id="rent-change">ปรับค่าเช่าสัญญาใหม่</a>' +
+            (diff ? ' · <a href="#" id="rent-use-standard">ใช้ราคามาตรฐาน</a>' : '')
+          : '');
+      var ch = document.getElementById('rent-change');
+      if (ch) ch.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        rentChanged = true;
+        rentInput.readOnly = false;
+        document.getElementById('rent-field').classList.remove('prefilled');
+        renderRentHint();
+        rentInput.focus();
+        rentInput.select();
+      });
+      var us = document.getElementById('rent-use-standard');
+      if (us) us.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        rentChanged = true;
+        rentInput.readOnly = false;
+        rentInput.value = standardRent;
+        document.getElementById('rent-field').classList.remove('prefilled');
+        renderRentHint();
+        renderTerm();
+      });
+    }
+
+    function renderTerm() {
+      var m = agreedMonths();
+      var startVal = document.getElementById('new-start').value;
+      var start = startVal ? D.parseISO(startVal) : newStart;
+      document.getElementById('custom-months-slot').style.display = monthsSelect.value === 'custom' ? '' : 'none';
+      document.getElementById('new-end').value = m > 0 ? D.thaiDate(D.addMonths(start, m)) : '—';
+      document.getElementById('term-note').innerHTML = m > 0
+        ? 'สัญญาใหม่: <strong>' + m + ' เดือน</strong> ถึง ' + D.thaiDate(D.addMonths(start, m)) +
+          ' · ค่าเช่า ' + D.money(rentInput.value || 0) + '/เดือน ล็อกตลอดสัญญาใหม่ · ' +
+          'ย้ายออกก่อนครบกำหนดใหม่จะ<strong>ริบเงินประกัน</strong> ' + D.money(deposit)
+        : 'กรุณาระบุจำนวนเดือนที่ตกลงกัน';
+    }
+
+    ['change', 'input'].forEach(function (ev) {
+      monthsSelect.addEventListener(ev, renderTerm);
+      document.getElementById('custom-months').addEventListener(ev, renderTerm);
+      document.getElementById('new-start').addEventListener(ev, renderTerm);
+      rentInput.addEventListener(ev, renderTerm);
+    });
+    renderRentHint();
+    renderTerm();
+
+    var form = document.getElementById('renew-form');
+    Demo.guardUnsaved(form);
+    Demo.submitWithSpinner(form, function (e, restore) {
+      var m = agreedMonths();
+      if (!m) { restore(); document.getElementById('custom-months').focus(); return; }
+      // Demo only: update the in-memory contract so S04 shows the renewed term
+      // on arrival. Nothing persists past a reload, same as every other screen.
+      var start = D.parseISO(document.getElementById('new-start').value);
+      r.contract = { months: m, start: start, end: D.addMonths(start, m) };
+      r.rent = Number(rentInput.value) || currentRent;
+      r.startDate = D.thaiDate(start);
+      location.href = 's04-room-detail.html?room=' + roomNo + '&banner=' +
+        encodeURIComponent('ต่อสัญญาห้อง ' + roomNo + ' แล้ว — ' + m + ' เดือน ถึง ' +
+          document.getElementById('new-end').value + ' · เงินประกันเดิมยกยอดมา') + qsAmp;
+    }, 700);
+  }
+</script>
+</body>
+</html>

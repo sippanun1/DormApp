@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S29 · งานของฉันวันนี้ — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .task-card.done { opacity: .6; }
+  .task-card.done .tc-label { text-decoration: line-through; }
+  .tc-label { font-weight: 600; font-size: 15px; }
+  .tc-due { font-size: 13px; color: var(--text-muted); }
+  .worker-summary { display: flex; justify-content: space-between; align-items: baseline; padding: 2px 2px 4px; }
+  .worker-summary .ws-count { font-family: var(--font-mono); font-weight: 700; }
+  /* One thumb, possibly wet hands, possibly outdoors: every action is a real
+     button at 52px, never a checkbox. Touch targets per CLAUDE.md (>=44px). */
+  .task-card .tc-actions { display: flex; gap: 8px; }
+  .task-card .tc-actions .btn { flex: 1; min-height: 52px; font-size: 15px; font-weight: 600; }
+  .task-card .tc-actions .btn-open { flex: 0 0 92px; }
+  .worker-tabs { display: flex; gap: 6px; }
+  .worker-tabs button { flex: 1; min-height: 44px; border-radius: 999px; border: 1px solid var(--border);
+    background: var(--card-bg); color: var(--text-muted); font-weight: 600; font-size: 14px; }
+  .worker-tabs button.active { background: var(--primary-soft); color: var(--primary); border-color: var(--primary); }
+</style>
+</head>
+<body data-style="a">
+<div class="phone-stage">
+  <div class="phone-frame">
+    <div class="phone-header">
+      <span class="user-chip"><span class="avatar">ซ</span><span>ฝ่ายซ่อมบำรุง (Worker)</span></span>
+      <div class="spacer" style="flex:1;"></div>
+      <span class="screen-id">S29 · งานวันนี้</span>
+      <a class="btn btn-ghost btn-sm" href="s36-mobile-login.html" style="margin-left:8px;">ออก</a>
+    </div>
+    <div class="phone-body">
+      <div class="worker-summary">
+        <span>งานของฉันวันนี้</span>
+        <span class="ws-count" id="task-count"></span>
+      </div>
+      <div class="worker-tabs" id="worker-tabs">
+        <button type="button" data-filter="open" class="active">ค้างอยู่</button>
+        <button type="button" data-filter="done">เสร็จแล้ว</button>
+      </div>
+      <div id="task-list" style="display:flex; flex-direction:column; gap:12px;"></div>
+      <div class="demo-note">ห้ามเห็นชื่อผู้เช่าหรือข้อมูลการเงิน — สิทธิ์ของ Worker จำกัดเฉพาะงานที่ได้รับมอบหมาย</div>
+    </div>
+  </div>
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script>
+  var D = window.AmanewData;
+  var TYPE_LABEL = { cleaning: ['ทำความสะอาด', 'badge-info'], repair: ['แจ้งซ่อม', 'badge-warning'] };
+
+  function updateCount() {
+    var remaining = D.workerTasks.filter(function (t) { return !t.done; }).length;
+    document.getElementById('task-count').textContent = remaining + ' / ' + D.workerTasks.length + ' ค้างอยู่';
+  }
+
+  var filter = 'open';
+
+  function render() {
+    var list = D.workerTasks.filter(function (t) { return filter === 'done' ? t.done : !t.done; });
+    document.getElementById('task-list').innerHTML = list.length ? list.map(function (t) {
+      var tl = TYPE_LABEL[t.type];
+      return '<div class="task-card' + (t.done ? ' done' : '') + '">' +
+        '<div class="tc-head"><span class="tc-room">' + t.room + '</span>' +
+        '<span class="status-badge sm ' + tl[1] + '">' + tl[0] + '</span></div>' +
+        '<div class="tc-label">' + t.label + '</div>' +
+        '<div class="tc-due">กำหนด: ' + t.due + '</div>' +
+        '<div class="tc-actions">' +
+          (t.done
+            ? '<button type="button" class="btn btn-secondary" data-undo="' + t.id + '">↩ ยังไม่เสร็จ</button>'
+            : '<a class="btn btn-primary" href="s30-task-detail.html?task=' + t.id + '">✓ ส่งงาน</a>' +
+              '<button type="button" class="btn btn-secondary btn-open" data-quick="' + t.id + '">เสร็จเลย</button>') +
+        '</div>' +
+      '</div>';
+    }).join('') : '<div class="demo-note">' + (filter === 'done' ? 'ยังไม่มีงานที่ส่งวันนี้' : 'ไม่มีงานค้าง — เยี่ยมมาก') + '</div>';
+    updateCount();
+
+    // "ส่งงาน" opens the report screen (photo + note); "เสร็จเลย" is the
+    // one-tap path for a job that needs no report at all.
+    document.querySelectorAll('[data-quick]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var task = D.workerTasks.filter(function (t) { return t.id === btn.dataset.quick; })[0];
+        task.done = true;
+        render();
+      });
+    });
+    document.querySelectorAll('[data-undo]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var task = D.workerTasks.filter(function (t) { return t.id === btn.dataset.undo; })[0];
+        task.done = false;
+        render();
+      });
+    });
+  }
+
+  document.getElementById('worker-tabs').addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-filter]');
+    if (!btn) return;
+    document.querySelectorAll('#worker-tabs button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+    filter = btn.dataset.filter;
+    render();
+  });
+  render();
+</script>
+</body>
+</html>

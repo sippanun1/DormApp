@@ -319,7 +319,7 @@
    ============================================================ */
 .task-card { background: var(--card-bg); border: var(--card-border); border-radius: var(--radius); box-shadow: var(--card-shadow); padding: var(--pad-card); display: flex; flex-direction: column; gap: 10px; }
 .task-card .tc-head { display: flex; align-items: center; gap: 10px; }
-.task-card .tc-room { font-size: 20px; font-weight: 700; }
+.task-card .tc-room { font-size: 20px; font-weight: 700; font-family: var(--font-mono); }
 .task-card .tc-check { display: flex; align-items: center; gap: 9px; padding: 6px 0; font-size: var(--fs-base); }
 .task-card .tc-check input { width: 20px; height: 20px; accent-color: var(--primary); }
 

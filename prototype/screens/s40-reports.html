@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S40 · รายงาน — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+<style>
+  /* Simple token-only bar rows — no chart library, this is a static prototype. */
+  .bar-row { display: grid; grid-template-columns: 200px 1fr 120px; gap: 12px; align-items: center; padding: 6px 0; }
+  .bar-row .bar-label { font-size: 13px; }
+  .bar-track { height: 14px; border-radius: 4px; background: var(--surface); border: 1px solid var(--border); overflow: hidden; }
+  .bar-track > span { display: block; height: 100%; }
+  .bar-row .bar-amt { text-align: right; font-family: var(--font-mono); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .report-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap); }
+  @media print { .sidebar, .topbar, .no-print { display: none !important; } .main { margin: 0; } }
+</style>
+</head>
+<body data-style="a" data-screen="S40" data-title="รายงาน">
+<div class="page-content" id="page-content">
+
+  <div data-admin-only>
+    <div class="card">
+      <div class="page-header-row">
+        <div>
+          <h3 style="margin:0;">รายงานประจำเดือน — กรกฎาคม 2569</h3>
+          <p class="muted" style="font-size:12px; margin-top:4px;">ตัวเลขทั้งหมดคำนวณสดจากบัญชีรายรับ-รายจ่ายและใบแจ้งหนี้ในระบบ</p>
+        </div>
+        <div class="spacer"></div>
+        <a class="btn btn-secondary no-print" href="s39-cash-book.html" id="book-link">← บัญชีรายรับ-รายจ่าย</a>
+        <button type="button" class="btn btn-secondary no-print" id="btn-print">🖨 พิมพ์ / บันทึก PDF</button>
+      </div>
+      <div class="kpi-row" id="kpi-row" style="margin-top:14px;"></div>
+    </div>
+
+    <!-- 15.6 income–expense monthly summary -->
+    <div class="report-grid">
+      <div class="card">
+        <h3 style="font-size:14px;">รายรับแยกตามประเภท</h3>
+        <div id="income-bars" style="margin-top:10px;"></div>
+      </div>
+      <div class="card">
+        <h3 style="font-size:14px;">รายจ่ายแยกตามหมวด</h3>
+        <div id="expense-bars" style="margin-top:10px;"></div>
+      </div>
+    </div>
+
+    <!-- 15.2 defaulters -->
+    <div class="card">
+      <div class="page-header-row">
+        <h3 style="margin:0; font-size:14px;">ค้างชำระ — ใครค้าง เท่าไร นานแค่ไหน</h3>
+        <div class="spacer"></div>
+        <span class="muted" style="font-size:12px;" id="overdue-summary"></span>
+      </div>
+      <table class="data-table" style="margin-top:10px;">
+        <thead><tr><th style="width:80px;">ห้อง</th><th>ผู้เช่า</th><th style="width:130px;">ครบกำหนด</th><th style="width:110px;">เกินมา</th><th class="td-money" style="width:120px;">ยอดค้าง</th><th style="width:120px;">สถานะ</th></tr></thead>
+        <tbody id="overdue-rows"></tbody>
+      </table>
+    </div>
+
+    <div class="report-grid">
+      <!-- 15.3 deposit liability -->
+      <div class="card">
+        <h3 style="font-size:14px;">ภาระเงินประกันที่ถือไว้</h3>
+        <p class="muted" style="font-size:12px;">เงินที่ต้องคืนผู้เช่าเมื่อย้ายออก (หักค่าใช้จ่ายตามจริง) — ไม่ใช่รายได้</p>
+        <div class="money-math-card" style="margin-top:10px; box-shadow:none;">
+          <div id="deposit-lines"></div>
+        </div>
+      </div>
+      <!-- 15.7 occupancy & upcoming vacancies -->
+      <div class="card">
+        <h3 style="font-size:14px;">อัตราการเข้าพัก และห้องที่จะว่าง</h3>
+        <div id="occupancy-lines" style="margin-top:10px;"></div>
+      </div>
+    </div>
+
+    <div class="demo-note no-print">
+      รายงานที่ยังไม่ได้ทำในต้นแบบนี้ (กฎ 15.4/15.5/15.8): กระทบยอดเงินสดรายวันต่อพนักงาน · ทะเบียนผู้พักสำหรับพิมพ์ส่งราชการ · แหล่งที่มาของการจอง
+    </div>
+  </div>
+
+  <div class="card" id="no-access-card" style="display:none;">
+    <p>หน้านี้สำหรับเจ้าของและพนักงานที่มีสิทธิ์ "ดูรายงานการเงิน" เท่านั้น</p>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var role = window.AmanewRole ? window.AmanewRole.current() : 'admin';
+  document.getElementById('book-link').href = 's39-cash-book.html' + qs;
+  document.getElementById('btn-print').addEventListener('click', function () { window.print(); });
+
+  var t = D.cashTotals(D.cashEntries);
+  var occupied = D.rooms.filter(function (r) { return r.state === 'occupied'; }).length;
+  var occupancyPct = Math.round(occupied / D.rooms.length * 100);
+
+  document.getElementById('kpi-row').innerHTML =
+    '<div class="kpi-tile kpi-success"><div class="kpi-num">' + D.money(t.income) + '</div><div class="kpi-label">รายรับรวม</div></div>' +
+    '<div class="kpi-tile kpi-warning"><div class="kpi-num">' + D.money(t.expense) + '</div><div class="kpi-label">รายจ่ายรวม</div></div>' +
+    '<div class="kpi-tile kpi-primary"><div class="kpi-num">' + D.money(t.net) + '</div><div class="kpi-label">กำไรสุทธิ (เงินสด)</div></div>' +
+    '<div class="kpi-tile"><div class="kpi-num">' + occupancyPct + '%</div><div class="kpi-label">อัตราการเข้าพัก</div></div>';
+
+  function bars(containerId, rows, color) {
+    var max = rows.reduce(function (m, r) { return Math.max(m, r.amount); }, 0) || 1;
+    document.getElementById(containerId).innerHTML = rows.map(function (r) {
+      return '<div class="bar-row">' +
+        '<span class="bar-label">' + r.label + '</span>' +
+        '<span class="bar-track"><span style="width:' + Math.round(r.amount / max * 100) + '%; background:' + color + ';"></span></span>' +
+        '<span class="bar-amt">' + D.money(r.amount) + '</span>' +
+      '</div>';
+    }).join('');
+  }
+  bars('income-bars', D.cashByCategory('income'), 'var(--success)');
+  bars('expense-bars', D.cashByCategory('expense'), 'var(--danger)');
+
+  // Defaulters — computed from the invoice list, with live late fees (never frozen
+  // until verification, per CLAUDE.md rule #3).
+  var DAYS_LATE = { 1042: 0, 1030: 11 };
+  var overdue = D.invoiceList.filter(function (i) { return i.status === 'unpaid' || i.status === 'rejected'; });
+  document.getElementById('overdue-rows').innerHTML = overdue.map(function (i) {
+    var days = DAYS_LATE[i.number] != null ? DAYS_LATE[i.number] : 0;
+    var fee = D.lateFee(days);
+    return '<tr>' +
+      '<td style="font-family:var(--font-mono); font-weight:700;">' + i.room + '</td>' +
+      '<td>' + i.tenant + '</td>' +
+      '<td class="td-muted">' + i.dueDate + '</td>' +
+      '<td>' + (days > 0 ? '<span class="status-badge badge-danger">' + days + ' วัน</span>' : '<span class="td-muted">ยังไม่เกิน</span>') + '</td>' +
+      '<td class="td-money">' + D.money(i.total + fee) + (fee ? '<div class="override-note">รวมค่าปรับ ' + D.money(fee) + '</div>' : '') + '</td>' +
+      '<td><span class="status-badge ' + (i.status === 'rejected' ? 'badge-danger' : 'badge-warning') + '">' +
+        (i.status === 'rejected' ? 'สลิปถูกปฏิเสธ' : 'ค้างชำระ') + '</span></td>' +
+    '</tr>';
+  }).join('');
+  var owedTotal = overdue.reduce(function (sum, i) {
+    return sum + i.total + D.lateFee(DAYS_LATE[i.number] || 0);
+  }, 0);
+  document.getElementById('overdue-summary').textContent = overdue.length + ' ราย · รวม ' + D.money(owedTotal);
+
+  // Deposit liability — money held, not earned.
+  var monthlyDeposits = D.rooms.filter(function (r) { return r.state === 'occupied' && r.rentalType === 'monthly'; });
+  var depositTotal = monthlyDeposits.reduce(function (s, r) { return s + (r.deposit != null ? r.deposit : D.rentFor(r)); }, 0);
+  var keyDeposits = D.rooms.filter(function (r) { return r.state === 'occupied' && r.rentalType === 'daily'; }).length * 500;
+  document.getElementById('deposit-lines').innerHTML =
+    '<div class="mm-line"><span class="mm-label">เงินประกัน (รายเดือน) — ' + monthlyDeposits.length + ' สัญญา</span><span class="mm-amount">' + D.money(depositTotal) + '</span></div>' +
+    '<div class="mm-line"><span class="mm-label">มัดจำกุญแจ (รายวัน) — ' + (keyDeposits / 500) + ' ห้อง</span><span class="mm-amount">' + D.money(keyDeposits) + '</span></div>' +
+    '<div class="mm-total"><span>รวมที่ถือไว้</span><span>' + D.money(depositTotal + keyDeposits) + '</span></div>' +
+    '<div class="mm-note">เงินประกันและมัดจำกุญแจเป็นคนละก้อน ไม่รวมกัน และไม่ใช่รายได้จนกว่าจะถูกริบ</div>';
+
+  // Occupancy + contracts ending soon = upcoming vacancies.
+  var vacant = D.rooms.filter(function (r) { return r.state === 'vacant'; }).length;
+  var ending = D.rooms.filter(function (r) {
+    var c = D.contractOf(r);
+    return c && (c.expiringSoon || c.expired);
+  });
+  document.getElementById('occupancy-lines').innerHTML =
+    '<div class="mm-line"><span class="mm-label">มีผู้เช่า/ผู้พัก</span><span class="mm-amount">' + occupied + ' / ' + D.rooms.length + ' ห้อง (' + occupancyPct + '%)</span></div>' +
+    '<div class="mm-line"><span class="mm-label">ว่างพร้อมให้เช่า</span><span class="mm-amount">' + vacant + ' ห้อง</span></div>' +
+    '<div class="mm-line"><span class="mm-label">สัญญาครบใน 30 วัน (อาจว่างเพิ่ม)</span><span class="mm-amount">' + ending.length + ' ห้อง</span></div>' +
+    (ending.length
+      ? '<div class="mm-note">' + ending.map(function (r) {
+          return 'ห้อง ' + r.number + ' (' + D.contractOf(r).endLabel + ')';
+        }).join(' · ') + ' — <a href="s28-today-frontdesk.html' + qs + '">ดูรายการต่อสัญญา</a></div>'
+      : '');
+
+  if (role === 'worker') {
+    document.getElementById('no-access-card').style.display = 'block';
+  }
+</script>
+</body>
+</html>

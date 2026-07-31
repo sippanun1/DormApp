@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S37 · ย้ายห้อง — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S37" data-title="ย้ายห้อง">
+<div class="page-content" id="page-content">
+
+  <div id="transfer-body" style="display:none;">
+    <a class="btn btn-ghost btn-sm" id="back-link" href="s04-room-detail.html">← รายละเอียดห้อง</a>
+
+    <!-- Transfer keeps the SAME contract with a new room number (Rule 10.2), so
+         nothing about the contract is editable here — it is carried, not rewritten. -->
+    <div class="card">
+      <h3 style="margin:0 0 12px;">ย้ายห้อง — สัญญาเดิมทั้งฉบับ</h3>
+      <div class="tenant-chip monthly" style="margin-bottom:12px;">
+        <span class="tc-name" id="t-name"></span><span class="tc-phone" id="t-phone"></span>
+      </div>
+      <div class="grid-3">
+        <div><div class="section-title">ห้องเดิม</div><div id="from-room" style="font-family:var(--font-mono); font-size:18px; font-weight:700;"></div></div>
+        <div><div class="section-title">ค่าเช่า/เดือน (คิดเท่าเดิม)</div><div class="money" id="cur-rent"></div></div>
+        <div><div class="section-title">เงินประกัน (ยกยอดไป)</div><div class="money" id="cur-deposit"></div></div>
+      </div>
+      <div class="rule-note" style="margin-top:12px;" id="contract-note"></div>
+    </div>
+
+    <div class="card">
+      <div class="page-header-row">
+        <h3 style="margin:0;">เลือกห้องใหม่</h3>
+        <div class="spacer"></div>
+        <span class="muted" style="font-size:12px;" id="pick-count"></span>
+      </div>
+      <p class="muted" style="font-size:12px; margin-top:4px;">เฉพาะห้องว่างประเภทรายเดือน — คลิกเพื่อเลือก</p>
+      <div class="settings-filters" style="margin:12px 0;">
+        <div class="sf-group">
+          <span class="sf-label">ประเภทห้อง</span>
+          <div class="floor-jump" id="f-type">
+            <button type="button" data-v="all" class="active">ทั้งหมด</button>
+            <button type="button" data-v="aircon">❄ แอร์</button>
+            <button type="button" data-v="fan">🌀 พัดลม</button>
+          </div>
+        </div>
+      </div>
+      <div id="room-grid-wrap"></div>
+      <div id="type-warning" style="margin-top:12px;"></div>
+    </div>
+
+    <!-- Rule 10.3: final reading on the old room, fresh start on the new one.
+         The fresh opening reading is the same requirement as a move-in (rule #9) —
+         the tenant never inherits the new room's earlier usage. -->
+    <div class="card" id="meter-card" style="display:none;">
+      <h3 style="font-size:14px;">มิเตอร์</h3>
+      <p class="muted" style="font-size:12px; margin-bottom:10px;">
+        จดเลขปิดห้องเดิม และเลขเริ่มต้นห้องใหม่ — บิลเดือนนี้จะมีค่าน้ำ-ไฟ <strong>สองช่วง</strong>
+        (ห้องเดิมถึงวันย้าย และห้องใหม่ตั้งแต่วันย้าย) ตามกฎ 10.3
+      </p>
+
+      <div class="section-title" style="margin-top:6px;">เลขปิด — ห้องเดิม <span id="m-from"></span></div>
+      <div class="meter-entry-row" data-utility="electric">
+        <div class="mer-room">⚡ ไฟฟ้า</div><div></div>
+        <div class="mer-prev" id="oe-prev"></div>
+        <input type="number" class="mer-current" id="oe-current" placeholder="เลขปิด" step="1">
+        <div class="mer-cost" id="oe-cost">—</div><div></div>
+      </div>
+      <div class="meter-entry-row" data-utility="water">
+        <div class="mer-room">💧 น้ำ</div><div></div>
+        <div class="mer-prev" id="ow-prev"></div>
+        <input type="number" class="mer-current" id="ow-current" placeholder="เลขปิด" step="1">
+        <div class="mer-cost" id="ow-cost">—</div><div></div>
+      </div>
+
+      <div class="section-title" style="margin-top:16px;">เลขเริ่มต้น — ห้องใหม่ <span id="m-to"></span></div>
+      <div class="meter-entry-row" data-utility="electric">
+        <div class="mer-room">⚡ ไฟฟ้า</div><div></div>
+        <div class="mer-prev" style="visibility:hidden;">—</div>
+        <input type="number" class="mer-current" id="ne-current" placeholder="เลขเริ่มต้น" step="1">
+        <div class="mer-cost muted" style="font-size:12px;">จดใหม่ทุกครั้ง</div><div></div>
+      </div>
+      <div class="meter-entry-row" data-utility="water">
+        <div class="mer-room">💧 น้ำ</div><div></div>
+        <div class="mer-prev" style="visibility:hidden;">—</div>
+        <input type="number" class="mer-current" id="nw-current" placeholder="เลขเริ่มต้น" step="1">
+        <div class="mer-cost muted" style="font-size:12px;">จดใหม่ทุกครั้ง</div><div></div>
+      </div>
+      <div class="error" id="meter-error" style="display:none; margin-top:10px;">กรุณากรอกเลขมิเตอร์ให้ครบทั้งสี่ช่อง</div>
+    </div>
+
+    <div class="card" id="confirm-card" style="display:none; gap:10px; flex-wrap:wrap;">
+      <button type="button" class="btn btn-primary" id="btn-confirm" data-primary>ยืนยันย้ายห้อง</button>
+      <a class="btn btn-secondary" id="cancel-link" href="s04-room-detail.html">ยกเลิก</a>
+      <div class="demo-note" style="width:100%;">ผู้เช่าขอย้ายห้องเองไม่ได้ ต้องให้ผู้จัดการ/เจ้าของเป็นผู้ดำเนินการ (กฎ 10.1) — ต้องมีสิทธิ์ "ย้ายห้อง · แก้ไขผู้เช่า"</div>
+    </div>
+  </div>
+
+  <div class="card" id="not-applicable" style="display:none;">
+    <p id="na-msg"></p>
+    <a class="btn btn-secondary" href="s02-dashboard.html" id="na-back">กลับแดชบอร์ด</a>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var qsAmp = qs.replace(/^\?/, '&');
+  var params = new URLSearchParams(qs);
+  var fromNo = params.get('room') || '105';
+  var from = D.room(fromNo);
+  var role = window.AmanewRole ? window.AmanewRole.current() : 'admin';
+  var typeFilter = 'all';
+  var target = null;
+
+  if (!from || from.rentalType !== 'monthly' || from.state !== 'occupied' || role === 'worker') {
+    document.getElementById('not-applicable').style.display = 'block';
+    document.getElementById('na-msg').textContent = role === 'worker'
+      ? 'หน้านี้สำหรับผู้จัดการ/เจ้าของเท่านั้น (กฎ 10.1)'
+      : 'ห้องนี้ไม่มีผู้เช่ารายเดือนที่จะย้ายห้องได้';
+    document.getElementById('na-back').href = 's02-dashboard.html' + qs;
+  } else {
+    build();
+  }
+
+  function build() {
+    document.getElementById('transfer-body').style.display = 'block';
+    document.getElementById('back-link').href = 's04-room-detail.html?room=' + fromNo + qsAmp;
+    document.getElementById('cancel-link').href = 's04-room-detail.html?room=' + fromNo + qsAmp;
+
+    var rent = from.rent || D.rentFor(from);
+    var deposit = from.deposit != null ? from.deposit : D.rentFor(from);
+    var c = D.contractOf(from);
+
+    document.getElementById('t-name').textContent = from.occupant;
+    document.getElementById('t-phone').textContent = from.phone || '08X-XXX-XXXX';
+    document.getElementById('from-room').textContent = 'ห้อง ' + fromNo;
+    document.getElementById('cur-rent').textContent = D.money(rent);
+    document.getElementById('cur-deposit').textContent = D.money(deposit);
+    document.getElementById('contract-note').innerHTML =
+      'ย้ายห้อง = <strong>สัญญาเดิมฉบับเดิม เปลี่ยนแค่เลขห้อง</strong> — ' +
+      (c ? 'สัญญา ' + c.months + ' เดือน ถึง ' + c.endLabel + ' เดินต่อตามเดิม · ' : '') +
+      'ค่าเช่าคิดเท่าเดิม ' + D.money(rent) + '/เดือน (กฎ 10.2) และเงินประกัน ' + D.money(deposit) +
+      ' ยกยอดไปห้องใหม่ ไม่เก็บใหม่ (กฎ 10.4)';
+
+    document.getElementById('oe-prev').textContent = from.meterPrev.electric;
+    document.getElementById('ow-prev').textContent = from.meterPrev.water;
+    document.getElementById('m-from').textContent = fromNo;
+
+    renderGrid();
+
+    document.getElementById('f-type').addEventListener('click', function (e) {
+      var btn = e.target.closest('button[data-v]');
+      if (!btn) return;
+      document.querySelectorAll('#f-type button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+      typeFilter = btn.dataset.v;
+      if (target && !eligible(target)) { target = null; afterPick(); }
+      renderGrid();
+    });
+
+    ['oe-current', 'ow-current'].forEach(function (id) {
+      document.getElementById(id).addEventListener('input', function () { recalcClosing(); });
+    });
+
+    document.getElementById('btn-confirm').addEventListener('click', function (e) {
+      var vals = ['oe-current', 'ow-current', 'ne-current', 'nw-current'].map(function (id) {
+        return document.getElementById(id).value;
+      });
+      if (vals.some(function (v) { return v === ''; })) {
+        document.getElementById('meter-error').style.display = 'block';
+        return;
+      }
+      document.getElementById('meter-error').style.display = 'none';
+      var btn = e.currentTarget;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> กำลังย้ายห้อง…';
+      setTimeout(function () {
+        // The move is handed forward in the URL (?transfer=from-to-day-…): data.js
+        // re-applies it on every page load, so the moved tenancy AND its split
+        // transfer-month bill stay consistent across every screen, without
+        // localStorage. Meter numbers ride along so the bill uses what was typed.
+        var moveDay = D.TODAY.getDate();
+        var t = [fromNo, target.number, moveDay, vals[0], vals[1], vals[2], vals[3]].join('-');
+        var carry = qs.replace(/[?&]transfer=[^&]*/, '').replace(/^\?/, '&');
+        location.href = 's04-room-detail.html?room=' + target.number + '&transfer=' + t + '&banner=' +
+          encodeURIComponent('ย้ายห้อง ' + fromNo + ' → ' + target.number + ' แล้ว — สัญญาและเงินประกันเดิมยกยอดมา · บิลเดือนนี้คิดค่าน้ำ-ไฟสองช่วง') + carry;
+      }, 800);
+    });
+  }
+
+  function eligible(r) {
+    return r.rentalType === 'monthly' && r.state === 'vacant' && r.number !== fromNo &&
+           (typeFilter === 'all' || r.roomType === typeFilter);
+  }
+
+  function renderGrid() {
+    var floors = [1, 2, 3, 4];
+    document.getElementById('room-grid-wrap').innerHTML = floors.map(function (f) {
+      var cards = D.rooms.filter(function (r) { return r.floor === f; }).map(function (r) {
+        var t = D.roomTypeOf(r);
+        var ok = eligible(r);
+        var cls = 'room-card grid-compact ' + (r.state === 'vacant' ? 'state-vacant-clean' : r.state === 'reserved' ? 'state-cleaning' : 'state-occupied') +
+          (ok ? ' pick-ok' : ' pick-off') + (target && target.number === r.number ? ' picked' : '');
+        return '<button type="button" class="' + cls + '" data-pick="' + r.number + '"' + (ok ? '' : ' disabled') +
+          ' title="ห้อง ' + r.number + ' · ' + t.label + '">' + r.number +
+          '<span class="room-sub">' + t.icon + '</span></button>';
+      }).join('');
+      return '<div class="floor-label">ชั้น ' + f + '</div><div class="room-mini-grid">' + cards + '</div>';
+    }).join('');
+
+    document.getElementById('pick-count').textContent = 'ห้องว่างที่ย้ายได้ ' + D.rooms.filter(eligible).length + ' ห้อง';
+
+    document.querySelectorAll('[data-pick]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        target = D.room(btn.dataset.pick);
+        renderGrid();
+        afterPick();
+      });
+    });
+  }
+
+  function afterPick() {
+    var warn = document.getElementById('type-warning');
+    document.getElementById('meter-card').style.display = target ? 'block' : 'none';
+    document.getElementById('confirm-card').style.display = target ? 'flex' : 'none';
+    if (!target) { warn.innerHTML = ''; return; }
+
+    document.getElementById('m-to').textContent = target.number;
+    var newType = D.roomTypeOf(target);
+    var oldType = D.roomTypeOf(from);
+    var rent = from.rent || D.rentFor(from);
+    // Moving between room types is where 10.2 bites: the rent still doesn't change,
+    // even into a room whose standard price is higher. Say so before, not after.
+    warn.innerHTML = '<div class="rule-note">ย้ายไป <strong>ห้อง ' + target.number + '</strong> (' + newType.label + ')' +
+      (newType.key !== oldType.key
+        ? ' — เปลี่ยนจาก' + oldType.label + ' ราคามาตรฐานห้องใหม่คือ ' + D.money(D.rentFor(target)) +
+          '/เดือน แต่ตามกฎ 10.2 <strong>ค่าเช่ายังคิดเท่าเดิม ' + D.money(rent) + '/เดือน</strong> ตลอดสัญญาฉบับนี้'
+        : ' — ประเภทห้องเดิม ค่าเช่าเท่าเดิม ' + D.money(rent) + '/เดือน') + '</div>';
+  }
+
+  function recalcClosing() {
+    var rates = D.UTILITY_RATES;
+    [['oe', 'electric', rates.electric], ['ow', 'water', rates.water]].forEach(function (row) {
+      var el = document.getElementById(row[0] + '-current');
+      var costEl = document.getElementById(row[0] + '-cost');
+      var prev = from.meterPrev[row[1]];
+      if (el.value === '') { costEl.textContent = '—'; return; }
+      var units = Number(el.value) - prev;
+      if (units < 0) { costEl.innerHTML = '<span class="mer-flag">ต่ำกว่าก่อนหน้า</span>'; return; }
+      costEl.innerHTML = D.money((units * row[2]).toFixed(2)) + '<span class="mer-units">' + units + ' หน่วย</span>';
+    });
+  }
+</script>
+</body>
+</html>

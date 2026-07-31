@@ -14,14 +14,16 @@
 <div class="page-content" id="page-content">
 
   <div class="wizard-stepper">
-    <div class="wiz-step current"><span class="wiz-num">1</span> ค้นหาผู้เช่า</div>
+    <div class="wiz-step done"><span class="wiz-num">✓</span> เลือกห้อง</div>
     <div class="wiz-connector"></div>
-    <div class="wiz-step"><span class="wiz-num">2</span> ข้อมูลการเข้าพัก</div>
+    <div class="wiz-step current"><span class="wiz-num">2</span> ค้นหาผู้เช่า</div>
+    <div class="wiz-connector"></div>
+    <div class="wiz-step"><span class="wiz-num">3</span> ข้อมูลการเข้าพัก</div>
   </div>
 
   <div class="card" style="max-width:440px;">
     <h3>กรอกเบอร์โทรศัพท์ผู้เช่า/แขก</h3>
-    <div id="room-select-slot"></div>
+    <div id="room-slot"></div>
     <form id="lookup-form">
       <div class="field full" style="margin-bottom:14px;">
         <label>เบอร์โทรศัพท์ <span class="req">*</span></label>
@@ -62,20 +64,30 @@
   var flow = params.get('flow') === 'daily' ? 'daily' : 'monthly';
   var roomNo = params.get('room');
 
-  // If no room was pre-selected (Quick Actions path), require a pick first.
+  // The room is always chosen on the floor plan (S03 picker), never from a
+  // 40-option dropdown here — landing on this screen without one means the user
+  // skipped step 1, so send them to the picker instead of improvising a select.
   if (!roomNo) {
-    var candidates = D.rooms.filter(function (r) { return r.rentalType === flow && r.state === 'vacant'; });
-    var options = candidates.map(function (r) { return '<option value="' + r.number + '">ห้อง ' + r.number + '</option>'; }).join('');
-    document.getElementById('room-select-slot').innerHTML =
+    location.replace('s03-room-grid.html?pick=' + flow + qs.replace(/^\?/, '&'));
+  } else {
+    var r = D.room(roomNo);
+    var type = r ? D.roomTypeOf(r) : null;
+    document.getElementById('room-slot').innerHTML =
       '<div class="field full" style="margin-bottom:14px;">' +
-        '<label>เลือกห้องว่าง (' + (flow === 'monthly' ? 'รายเดือน' : 'รายวัน') + ') <span class="req">*</span></label>' +
-        '<select id="room-pick">' + options + '</select>' +
+        '<label>ห้องที่เลือก</label>' +
+        '<div style="display:flex; align-items:center; gap:10px;">' +
+          '<span style="font-family:var(--font-mono); font-size:20px; font-weight:700;">ห้อง ' + roomNo + '</span>' +
+          (type ? '<span class="type-chip ' + type.key + '">' + type.icon + ' ' + type.short + '</span>' : '') +
+          '<a class="btn btn-ghost btn-sm" href="s03-room-grid.html?pick=' + flow + qs.replace(/^\?/, '&') + '">เปลี่ยนห้อง</a>' +
+        '</div>' +
       '</div>';
   }
 
-  function currentRoom() {
-    return roomNo || document.getElementById('room-pick').value;
-  }
+  function currentRoom() { return roomNo; }
+
+  // A phone carried in from global search (returning tenant) pre-fills the box.
+  var carriedPhone = params.get('phone');
+  if (carriedPhone) document.getElementById('phone').value = carriedPhone;
 
   var lastPhone = '';
   var form = document.getElementById('lookup-form');
