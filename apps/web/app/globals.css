@@ -1,0 +1,157 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   Design tokens — Style A "Clean Professional", the style the
+   owner approved on 2026-08-10. Copied from prototype/tokens.css,
+   which stays the reference: change a value here and there, never
+   only here.
+   ============================================================ */
+:root {
+  --font-heading: var(--font-ibm-plex-thai), sans-serif;
+  --font-body: var(--font-ibm-plex-thai), sans-serif;
+  --fs-base: 14px;
+  --fw-heading: 600;
+  --ls-heading: 0;
+
+  --bg: #ffffff;
+  --surface: #f7f8fa;
+  --card-bg: #ffffff;
+  --border: #e5e7eb;
+  --primary: #2563eb;
+  --primary-soft: #eff6ff;
+  --primary-contrast: #ffffff;
+  --text: #111827;
+  --text-muted: #6b7280;
+
+  --success: #16a34a;
+  --info: #2563eb;
+  --warning: #d97706;
+  --danger: #dc2626;
+  --neutral: #9ca3af;
+
+  /* Soft fills for the status semantics — the room grid reads as colour blocks,
+     so the fill has to be light enough for text to sit on it. */
+  --success-soft: color-mix(in srgb, var(--success) 12%, var(--card-bg));
+  --info-soft: color-mix(in srgb, var(--info) 12%, var(--card-bg));
+  --warning-soft: color-mix(in srgb, var(--warning) 14%, var(--card-bg));
+  --danger-soft: color-mix(in srgb, var(--danger) 11%, var(--card-bg));
+  --neutral-soft: color-mix(in srgb, var(--neutral) 14%, var(--card-bg));
+
+  /* Rental type is the second axis and never merges with room type (rule 11):
+     it gets its own colour on the top edge of every room card. */
+  --rental-monthly: #4f46e5;
+  --rental-daily: #ea580c;
+
+  --radius: 8px;
+  --btn-radius: 8px;
+  --card-shadow: none;
+  --drawer-shadow: 0 4px 24px rgba(17, 24, 39, 0.1);
+
+  /* chrome = sidebar/topbar, kept darker than the white content area */
+  --chrome-bg: #f1f3f6;
+  --chrome-text: #111827;
+  --chrome-muted: #6b7280;
+  --chrome-border: #e1e4e9;
+  --chrome-active-bg: #e4ebfb;
+  --chrome-active-text: #2563eb;
+}
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    font-size: var(--fs-base);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-heading);
+    font-weight: var(--fw-heading);
+    letter-spacing: var(--ls-heading);
+  }
+}
+
+@layer components {
+  /* Money is ฿-prefixed with comma thousands and always numeric — never let a
+     proportional font stagger the digits in a column. */
+  .money {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ---- Room card (components.css §2, ported) ----------------------------
+     S03's hard requirement: all 60 rooms visible without scrolling at
+     1366×768. 15 columns per floor, 44px tall, 6px gaps — four of these
+     blocks plus their labels fit the viewport with room to spare. */
+  .room-mini-grid {
+    display: grid;
+    grid-template-columns: repeat(15, 1fr);
+    gap: 6px;
+  }
+
+  .room-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    min-height: 44px;
+    border: 1px solid var(--border);
+    border-radius: calc(var(--radius) - 2px);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .room-card .room-sub {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+
+  /* The three states S03 actually distinguishes. */
+  .state-vacant {
+    background: var(--success-soft);
+    border-color: color-mix(in srgb, var(--success) 40%, var(--border));
+  }
+  .state-occupied {
+    background: var(--info-soft);
+    border-color: color-mix(in srgb, var(--info) 35%, var(--border));
+  }
+  .state-reserved {
+    background: var(--warning-soft);
+    border-style: dotted;
+    border-color: var(--warning);
+  }
+
+  .room-card[data-rental='monthly'] {
+    border-top: 3px solid var(--rental-monthly);
+  }
+  .room-card[data-rental='daily'] {
+    border-top: 3px solid var(--rental-daily);
+  }
+
+  /* Picker mode: only rooms eligible for the flow being started are clickable. */
+  .room-card.pick-ok {
+    cursor: pointer;
+  }
+  .room-card.pick-ok:hover {
+    outline: 2px solid var(--primary);
+  }
+  .room-card.pick-off {
+    opacity: 0.32;
+    pointer-events: none;
+    filter: grayscale(0.6);
+  }
+}

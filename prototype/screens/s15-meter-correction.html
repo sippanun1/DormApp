@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S15 · แก้ไขค่ามิเตอร์ — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S15" data-title="แก้ไขค่ามิเตอร์">
+<div class="page-content" id="page-content">
+
+  <div data-admin-only>
+    <div class="page-header-row">
+      <a class="btn btn-ghost btn-sm" id="back-link" href="s04-room-detail.html">← รายละเอียดห้อง</a>
+    </div>
+
+    <div class="card" style="max-width:480px;">
+      <h3>แก้ไขค่ามิเตอร์ — ห้อง <span id="room-label"></span></h3>
+      <p class="muted" style="font-size:12px; margin-bottom:10px;">แก้ไขนี้เขียนลงประวัติแบบเพิ่มรายการเท่านั้น (append-only) — ค่าที่จดผิดพลาดยังอยู่ในประวัติ ไม่ถูกลบทิ้ง</p>
+
+      <form id="correction-form" class="form-grid">
+        <div class="field full">
+          <label>ค่าที่จดไว้เดิม</label>
+          <div class="meter-entry-row" data-utility="electric" style="grid-template-columns: 90px 1fr;">
+            <div class="mer-room">⚡ ไฟฟ้า</div><div class="mer-prev" id="e-old" style="text-align:left;"></div>
+          </div>
+          <div class="meter-entry-row" data-utility="water" style="grid-template-columns: 90px 1fr;">
+            <div class="mer-room">💧 น้ำ</div><div class="mer-prev" id="w-old" style="text-align:left;"></div>
+          </div>
+        </div>
+        <div class="field full">
+          <label>ค่าไฟฟ้าที่ถูกต้อง <span class="req">*</span></label>
+          <input type="number" id="e-correct" step="1">
+        </div>
+        <div class="field full">
+          <label>ค่าน้ำที่ถูกต้อง <span class="req">*</span></label>
+          <input type="number" id="w-correct" step="1">
+        </div>
+        <div class="field full">
+          <label>เหตุผลการแก้ไข <span class="req">*</span></label>
+          <input type="text" id="correction-reason" placeholder="เช่น จดตัวเลขผิด, มิเตอร์เสีย อ่านค่าใหม่">
+          <div class="error" id="correction-error" style="display:none;">กรุณากรอกค่าที่ถูกต้องและเหตุผล</div>
+        </div>
+        <div class="field full" style="flex-direction:row; gap:10px; margin-top:6px;">
+          <button type="submit" class="btn btn-primary" data-primary>บันทึกการแก้ไข</button>
+          <a class="btn btn-secondary" href="s04-room-detail.html" id="cancel-link">ยกเลิก</a>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="card" id="no-access-card" style="display:none;">
+    <p>หน้านี้สำหรับผู้ดูแลระบบ (Admin) เท่านั้น</p>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var qsAmp = qs.replace(/^\?/, '&');
+  var params = new URLSearchParams(qs);
+  var room = params.get('room') || '105';
+  var inv = D.invoice; // demo on-file reading, same convention as S13/S27
+
+  document.getElementById('room-label').textContent = room;
+  document.getElementById('back-link').href = 's04-room-detail.html?room=' + room + qsAmp;
+  document.getElementById('cancel-link').href = 's04-room-detail.html?room=' + room + qsAmp;
+  document.getElementById('e-old').textContent = inv.electric.prev + ' → ' + inv.electric.cur;
+  document.getElementById('w-old').textContent = inv.water.prev + ' → ' + inv.water.cur;
+  document.getElementById('e-correct').value = inv.electric.cur;
+  document.getElementById('w-correct').value = inv.water.cur;
+
+  var form = document.getElementById('correction-form');
+  Demo.guardUnsaved(form);
+  Demo.submitWithSpinner(form, function (e, restore) {
+    var eCorrect = document.getElementById('e-correct').value;
+    var wCorrect = document.getElementById('w-correct').value;
+    var reason = document.getElementById('correction-reason').value.trim();
+    if (!eCorrect || !wCorrect || !reason) {
+      document.getElementById('correction-error').style.display = 'block';
+      restore();
+      return;
+    }
+    location.href = 's04-room-detail.html?room=' + room + '&banner=' +
+      encodeURIComponent('บันทึกการแก้ไขค่ามิเตอร์ห้อง ' + room + ' แล้ว — พร้อมออกบิลใหม่') + qsAmp;
+  });
+
+  if (window.AmanewRole && window.AmanewRole.current() !== 'admin') {
+    document.querySelector('[data-admin-only]').style.display = 'none';
+    document.getElementById('no-access-card').style.display = 'block';
+  }
+</script>
+</body>
+</html>

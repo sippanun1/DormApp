@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S13 · จดมิเตอร์ — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S13" data-title="จดมิเตอร์">
+<div class="page-content" id="page-content">
+
+  <!-- ============================================================
+       BATCH MODE (default) — the whole month's reading round on one
+       screen. Replaces the old pick-a-room-from-a-list → form → save →
+       bounce back loop, which cost one full page round trip per room
+       for ~40 monthly rooms every cycle.
+       ============================================================ -->
+  <div id="batch-view">
+    <div class="card">
+      <div class="page-header-row">
+        <div>
+          <h3 style="margin:0;">จดมิเตอร์ประจำเดือน — กรกฎาคม 2569</h3>
+          <p class="muted" style="font-size:13px; margin-top:4px;">
+            กรอกเลขปัจจุบันของแต่ละห้อง — บันทึกทีละห้องอัตโนมัติเมื่อกรอกครบ ออกจากหน้านี้กลางคันได้ ค่าที่บันทึกแล้วไม่หาย
+          </p>
+        </div>
+        <div class="spacer"></div>
+        <div style="text-align:right;">
+          <div class="muted" style="font-size:11px; font-weight:600;">อัตราค่าบริการ</div>
+          <div style="font-family:var(--font-mono); font-size:13px;">⚡ <span id="rate-e"></span>/หน่วย · 💧 <span id="rate-w"></span>/หน่วย</div>
+        </div>
+      </div>
+
+      <div class="progress-wrap" style="margin-top:14px;">
+        <span class="progress-count"><span id="done-count">0</span>/<span id="total-count">0</span> ห้อง</span>
+        <div class="progress-bar"><span id="progress-fill"></span></div>
+        <span class="muted" style="font-size:12px;">คงเหลือ <span id="left-count">0</span> ห้อง</span>
+      </div>
+
+      <div class="floor-jump" style="margin-top:14px;" id="floor-jump">
+        <button type="button" data-floor="all" class="active">ทุกชั้น</button>
+        <button type="button" data-floor="1">ชั้น 1</button>
+        <button type="button" data-floor="2">ชั้น 2</button>
+        <button type="button" data-floor="3">ชั้น 3</button>
+        <button type="button" data-floor="4">ชั้น 4</button>
+      </div>
+      <div class="demo-note" style="margin-top:12px;">
+        เคล็ดลับ: กด <strong>Enter</strong> เพื่อลงไปห้องถัดไปในคอลัมน์เดิม — เดินจดทั้งชั้นได้โดยไม่ต้องใช้เมาส์<br>
+        <strong>มิเตอร์เสีย/อ่านไม่ได้</strong> = จดเลขจริงไม่ได้ (มิเตอร์เสีย หน้าปัดอ่านไม่ออก หรือเข้าห้องไม่ได้) —
+        ติ๊กช่องนี้แล้วกรอกค่าที่ประมาณจากการใช้เดือนก่อน บิลจะขึ้นป้าย "ประมาณการ" ให้ผู้เช่าเห็นว่าไม่ใช่เลขที่อ่านจริง และแก้เป็นเลขจริงภายหลังได้ที่ S15
+      </div>
+    </div>
+
+    <div class="card" style="padding-bottom:0;">
+      <div id="batch-wrap"></div>
+      <div class="sticky-actions">
+        <span id="sticky-status" class="muted" style="font-size:13px;"></span>
+        <div class="spacer" style="flex:1;"></div>
+        <a class="btn btn-secondary" href="s02-dashboard.html" id="batch-back">กลับแดชบอร์ด</a>
+        <a class="btn btn-primary" href="s17-batch-summary.html" id="batch-invoice">ไปออกบิลประจำเดือน</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SINGLE-ROOM MODE (?room=) — unchanged entry point from S04,
+       where the room is already known and only one room is being fixed.
+       ============================================================ -->
+  <div id="form-card" class="card" style="max-width:720px; display:none;">
+    <h3>จดมิเตอร์ — ห้อง <span id="room-label"></span></h3>
+    <p class="muted" style="margin-bottom:10px;">กรอกเลขมิเตอร์ปัจจุบัน — เว้นว่างได้หากยังไม่ได้จดมิเตอร์ตัวนั้นวันนี้ ค่าก่อนหน้าเป็นค่าอ้างอิง แก้ไขไม่ได้</p>
+
+    <form id="meter-form">
+      <div class="meter-entry-row" data-utility="electric">
+        <div class="mer-room">⚡ ไฟฟ้า</div>
+        <div><label class="hint">อัตรา (บาท/หน่วย)</label><input type="number" class="mer-current" id="e-rate" step="0.01" style="width:90px; text-align:right;" disabled></div>
+        <div class="mer-prev" id="e-prev"></div>
+        <input type="number" class="mer-current" id="e-current" placeholder="เลขปัจจุบัน" step="1">
+        <div class="mer-cost" id="e-cost">—</div>
+        <div></div>
+      </div>
+      <div class="meter-entry-row" data-utility="water">
+        <div class="mer-room">💧 น้ำ</div>
+        <div><label class="hint">อัตรา (บาท/หน่วย)</label><input type="number" class="mer-current" id="w-rate" step="0.01" style="width:90px; text-align:right;" disabled></div>
+        <div class="mer-prev" id="w-prev"></div>
+        <input type="number" class="mer-current" id="w-current" placeholder="เลขปัจจุบัน" step="1">
+        <div class="mer-cost" id="w-cost">—</div>
+        <div></div>
+      </div>
+
+      <label class="mb-est" style="margin-top:10px; display:inline-flex;"
+             title="ใช้เมื่อมิเตอร์เสีย อ่านเลขไม่ได้ หรือเข้าห้องไม่ได้">
+        <input type="checkbox" id="single-est"> มิเตอร์เสีย/อ่านไม่ได้ — บันทึกเป็นค่าประมาณการ
+      </label>
+
+      <div id="warning-slot"></div>
+
+      <div style="display:flex; gap:10px; margin-top:16px;">
+        <button type="submit" class="btn btn-primary" data-primary>บันทึกการอ่านมิเตอร์</button>
+        <a class="btn btn-secondary" href="s04-room-detail.html" id="cancel-link">ยกเลิก</a>
+      </div>
+      <div class="demo-note" style="margin-top:12px;">โหมดสาธิต: กด Shift ค้างไว้ตอนกด "บันทึกการอ่านมิเตอร์" เพื่อดูสถานการณ์ซ้ำ (S14)</div>
+    </form>
+  </div>
+
+</div>
+
+<!-- S14 — duplicate meter reading conflict. Per Master Document §10: Staff acknowledges
+     and returns to S04 (no in-app correction access); Admin gets a path to S15. -->
+<div class="dialog-overlay" id="conflict-dialog" aria-hidden="true">
+  <div class="dialog-box">
+    <span class="screen-id">S14 · มีการจดมิเตอร์รอบนี้แล้ว</span>
+    <div class="dialog-reason">บันทึกมิเตอร์ไม่สำเร็จ</div>
+    <div class="dialog-what">ห้อง <span id="conflict-room"></span> มีการจดมิเตอร์รอบบิลนี้ไว้แล้ว — ค่าที่บันทึกไว้: ⚡ <span id="conflict-e"></span> · 💧 <span id="conflict-w"></span></div>
+    <div class="dialog-next" id="conflict-next">หากค่าที่จดไว้ผิดพลาด ให้แจ้งผู้ดูแลระบบ (Admin) เพื่อแก้ไข</div>
+    <div class="dialog-actions">
+      <a class="btn btn-secondary" id="conflict-correct-link" href="s15-meter-correction.html" style="display:none;">แก้ไขค่ามิเตอร์</a>
+      <button type="button" class="btn btn-primary" id="ack-btn">รับทราบ</button>
+    </div>
+  </div>
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var qsAmp = qs.replace(/^\?/, '&');
+  var params = new URLSearchParams(qs);
+  var room = params.get('room');
+  var RATE_E = D.UTILITY_RATES.electric;
+  var RATE_W = D.UTILITY_RATES.water;
+  var role = window.AmanewRole ? window.AmanewRole.current() : 'admin';
+
+  // Rooms already read this cycle. Room 105's reading is on file everywhere else
+  // in the build (invoice #1042), so the sheet must show it as done, not pending —
+  // this is the batch-mode equivalent of the S14 duplicate conflict.
+  var ALREADY_READ = { '105': { e: D.invoice.electric.cur, w: D.invoice.water.cur } };
+
+  if (!room) {
+    buildBatch();
+  } else {
+    buildSingle();
+  }
+
+  /* ---------------------------------------------------------------
+     Batch sheet
+     --------------------------------------------------------------- */
+  function buildBatch() {
+    document.getElementById('form-card').style.display = 'none';
+    document.getElementById('rate-e').textContent = D.money(RATE_E);
+    document.getElementById('rate-w').textContent = D.money(RATE_W);
+    document.getElementById('batch-back').href = 's02-dashboard.html' + qs;
+    document.getElementById('batch-invoice').href = 's17-batch-summary.html' + qs;
+
+    var pending = D.metersPendingRooms;
+    var floors = [1, 2, 3, 4];
+    var html = floors.map(function (f) {
+      var onFloor = pending.filter(function (p) { return p.floor === f; });
+      if (!onFloor.length) return '';
+      var rows = onFloor.map(function (p) {
+        var done = ALREADY_READ[p.room];
+        var r = D.room(p.room);
+        var type = D.roomTypeOf(r);
+        return '' +
+          '<tr data-room="' + p.room + '" data-prev-e="' + p.prevElectric + '" data-prev-w="' + p.prevWater + '"' +
+              (done ? ' class="saved locked"' : '') + '>' +
+            '<td class="mb-room">' + p.room + ' <span class="type-chip sm ' + type.key + '">' + type.icon + ' ' + type.short + '</span></td>' +
+            '<td class="mb-tenant">' + (p.tenant || '') + '</td>' +
+            '<td class="num mb-prev">' + p.prevElectric + '</td>' +
+            '<td class="num">' + (done
+              ? '<span class="mb-units">' + done.e + '</span>'
+              : '<input type="number" class="mb-input" data-col="e" step="1" placeholder="—">') + '</td>' +
+            '<td class="num mb-prev">' + p.prevWater + '</td>' +
+            '<td class="num">' + (done
+              ? '<span class="mb-units">' + done.w + '</span>'
+              : '<input type="number" class="mb-input" data-col="w" step="1" placeholder="—">') + '</td>' +
+            '<td class="num mb-total">' + (done ? cellTotal(done.e - p.prevElectric, done.w - p.prevWater) : '—') + '</td>' +
+            '<td class="mb-status">' + (done
+              ? '✓ จดแล้วรอบนี้' + (role === 'admin'
+                  ? ' · <a href="s15-meter-correction.html?room=' + p.room + qsAmp + '">แก้ไข</a>'
+                  : '')
+              : '<span class="mb-msg"></span>' +
+                '<label class="mb-est" title="ใช้เมื่อมิเตอร์เสีย อ่านเลขไม่ได้ หรือเข้าห้องไม่ได้ — บิลจะติดป้าย ประมาณการ ไว้">' +
+                  '<input type="checkbox" data-est> มิเตอร์เสีย/อ่านไม่ได้</label>') + '</td>' +
+          '</tr>';
+      }).join('');
+      return '<div class="floor-label" data-floor-label="' + f + '">ชั้น ' + f + ' · ' + onFloor.length + ' ห้อง</div>' +
+        '<table class="meter-batch" data-floor="' + f + '">' +
+          '<thead><tr>' +
+            '<th style="width:140px;">ห้อง</th><th>ผู้เช่า</th>' +
+            '<th class="num">⚡ ก่อนหน้า</th><th class="num" style="width:110px;">⚡ ปัจจุบัน</th>' +
+            '<th class="num">💧 ก่อนหน้า</th><th class="num" style="width:110px;">💧 ปัจจุบัน</th>' +
+            '<th class="num" style="width:120px;">ค่าน้ำ+ไฟ</th><th style="width:170px;">สถานะ</th>' +
+          '</tr></thead><tbody>' + rows + '</tbody></table>';
+    }).join('');
+    document.getElementById('batch-wrap').innerHTML = html;
+
+    document.getElementById('total-count').textContent = pending.length;
+    refreshProgress();
+
+    var inputs = Array.prototype.slice.call(document.querySelectorAll('.mb-input'));
+
+    inputs.forEach(function (input) {
+      input.addEventListener('input', function () { recalcRow(input.closest('tr')); });
+      // Enter walks down the same column — the whole point of the sheet.
+      input.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        var col = input.dataset.col;
+        var idx = inputs.indexOf(input);
+        for (var i = idx + 1; i < inputs.length; i++) {
+          if (inputs[i].dataset.col === col) { inputs[i].focus(); inputs[i].select(); return; }
+        }
+        input.blur();
+      });
+    });
+
+    // Save per row when focus leaves it — a half-walked floor is never lost.
+    document.querySelectorAll('.meter-batch tbody tr').forEach(function (tr) {
+      tr.addEventListener('focusout', function (e) {
+        if (tr.contains(e.relatedTarget)) return; // still inside this room's row
+        commitRow(tr);
+      });
+      var est = tr.querySelector('[data-est]');
+      if (est) est.addEventListener('change', function () { recalcRow(tr); commitRow(tr); });
+    });
+
+    document.getElementById('floor-jump').addEventListener('click', function (e) {
+      var btn = e.target.closest('button[data-floor]');
+      if (!btn) return;
+      document.querySelectorAll('#floor-jump button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+      var f = btn.dataset.floor;
+      document.querySelectorAll('.meter-batch').forEach(function (t) {
+        var show = f === 'all' || t.dataset.floor === f;
+        t.style.display = show ? '' : 'none';
+        var label = document.querySelector('[data-floor-label="' + t.dataset.floor + '"]');
+        if (label) label.style.display = show ? '' : 'none';
+      });
+    });
+  }
+
+  function cellTotal(unitsE, unitsW) {
+    var cost = Math.max(0, unitsE) * RATE_E + Math.max(0, unitsW) * RATE_W;
+    return D.money(cost.toFixed(2)) +
+      '<span class="mb-units" style="display:block;">' + unitsE + ' + ' + unitsW + ' หน่วย</span>';
+  }
+
+  // Live per-row math + the reading-below-previous flag (CLAUDE.md rule #9).
+  function recalcRow(tr) {
+    if (tr.classList.contains('locked')) return;
+    var eIn = tr.querySelector('[data-col="e"]');
+    var wIn = tr.querySelector('[data-col="w"]');
+    var prevE = Number(tr.dataset.prevE);
+    var prevW = Number(tr.dataset.prevW);
+    var totalCell = tr.querySelector('.mb-total');
+    // Only the message span is rewritten — the ประมาณการ checkbox stays in the DOM
+    // so its listener survives every recalc.
+    var msg = tr.querySelector('.mb-msg');
+    var est = tr.querySelector('[data-est]');
+    tr.classList.toggle('estimated', !!(est && est.checked));
+
+    var eVal = eIn.value === '' ? null : Number(eIn.value);
+    var wVal = wIn.value === '' ? null : Number(wIn.value);
+    var low = (eVal !== null && eVal < prevE) || (wVal !== null && wVal < prevW);
+    tr.classList.toggle('row-warning', low);
+    tr.classList.remove('saved');
+
+    if (low) {
+      totalCell.innerHTML = '<span class="mer-flag">ต่ำกว่าก่อนหน้า</span>';
+      msg.innerHTML = '<span class="mer-flag">ตรวจสอบเลขอีกครั้ง</span> ';
+      return;
+    }
+    msg.textContent = '';
+    if (eVal === null || wVal === null) { totalCell.textContent = '—'; return; }
+    totalCell.innerHTML = cellTotal(eVal - prevE, wVal - prevW);
+  }
+
+  function commitRow(tr) {
+    if (tr.classList.contains('locked') || tr.classList.contains('row-warning')) return;
+    var eIn = tr.querySelector('[data-col="e"]');
+    var wIn = tr.querySelector('[data-col="w"]');
+    if (!eIn || !wIn || eIn.value === '' || wIn.value === '') return;
+    // Both utilities submit together as one reading for this room (ADR-015) —
+    // the batch is many single-room submissions, not one giant transaction.
+    var est = tr.querySelector('[data-est]');
+    tr.classList.add('saved');
+    tr.querySelector('.mb-msg').innerHTML = est && est.checked
+      ? '<span class="mer-flag">✓ บันทึก (ประมาณการ)</span> '
+      : '✓ บันทึกแล้ว ';
+    refreshProgress();
+  }
+
+  function refreshProgress() {
+    var total = D.metersPendingRooms.length;
+    var done = document.querySelectorAll('.meter-batch tbody tr.saved').length;
+    document.getElementById('done-count').textContent = done;
+    document.getElementById('left-count').textContent = total - done;
+    document.getElementById('progress-fill').style.width = total ? (done / total * 100) + '%' : '0';
+    document.getElementById('sticky-status').textContent = done === total
+      ? 'จดครบทุกห้องแล้ว — พร้อมออกบิลประจำเดือน'
+      : 'บันทึกอัตโนมัติทีละห้อง — ยังเหลืออีก ' + (total - done) + ' ห้อง';
+  }
+
+  /* ---------------------------------------------------------------
+     Single-room form (deep link from S04 / S15)
+     --------------------------------------------------------------- */
+  function buildSingle() {
+    document.getElementById('batch-view').style.display = 'none';
+    document.getElementById('form-card').style.display = 'block';
+
+    document.getElementById('room-label').textContent = room;
+    document.getElementById('cancel-link').href = 's13-meter-reading.html' + qs;
+
+    var pending = D.meterPendingRoom(room);
+    var prevE = pending ? pending.prevElectric : D.invoice.electric.prev;
+    var prevW = pending ? pending.prevWater : D.invoice.water.prev;
+    document.getElementById('e-prev').textContent = prevE;
+    document.getElementById('w-prev').textContent = prevW;
+    document.getElementById('e-rate').value = RATE_E;
+    document.getElementById('w-rate').value = RATE_W;
+
+    var recalc = function (prefix, prev, rate) {
+      var cur = document.getElementById(prefix + '-current').value;
+      var costEl = document.getElementById(prefix + '-cost');
+      var row = document.querySelector('.meter-entry-row[data-utility="' + (prefix === 'e' ? 'electric' : 'water') + '"]');
+      if (cur === '') { costEl.textContent = '—'; row.classList.remove('warning'); return; }
+      var units = Number(cur) - prev;
+      if (units < 0) {
+        costEl.innerHTML = '<span class="mer-flag">ค่าต่ำกว่าก่อนหน้า — ตรวจสอบ</span>';
+        row.classList.add('warning');
+        return;
+      }
+      row.classList.remove('warning');
+      costEl.innerHTML = D.money((units * rate).toFixed(2)) + '<span class="mer-units">' + units + ' หน่วย</span>';
+    };
+    document.getElementById('e-current').addEventListener('input', function () { recalc('e', prevE, RATE_E); });
+    document.getElementById('w-current').addEventListener('input', function () { recalc('w', prevW, RATE_W); });
+
+    var form = document.getElementById('meter-form');
+    Demo.guardUnsaved(form);
+
+    var shiftHeld = false;
+    form.querySelector('[data-primary]').addEventListener('click', function (e) { shiftHeld = e.shiftKey; }, true);
+
+    document.getElementById('conflict-correct-link').style.display = (role === 'admin') ? '' : 'none';
+    document.getElementById('conflict-correct-link').href = 's15-meter-correction.html?room=' + room + qsAmp;
+    document.getElementById('conflict-next').textContent = (role === 'admin')
+      ? 'แก้ไขค่ามิเตอร์ได้ที่หน้าแก้ไขมิเตอร์'
+      : 'หากค่าที่จดไว้ผิดพลาด ให้แจ้งผู้ดูแลระบบ (Admin) เพื่อแก้ไข';
+
+    Demo.submitWithSpinner(form, function (e, restore) {
+      var eCur = document.getElementById('e-current').value;
+      var wCur = document.getElementById('w-current').value;
+      if (!eCur && !wCur) {
+        document.getElementById('warning-slot').innerHTML =
+          '<div class="error" style="margin-top:8px;">กรุณากรอกเลขมิเตอร์อย่างน้อยหนึ่งตัว</div>';
+        restore();
+        return;
+      }
+      if (shiftHeld) {
+        restore();
+        document.getElementById('conflict-room').textContent = room;
+        document.getElementById('conflict-e').textContent = D.invoice.electric.prev + ' → ' + D.invoice.electric.cur;
+        document.getElementById('conflict-w').textContent = D.invoice.water.prev + ' → ' + D.invoice.water.cur;
+        Demo.openDialog('conflict-dialog', form.querySelector('[data-primary]'));
+        return;
+      }
+      var parts = [];
+      if (eCur) parts.push('ไฟฟ้า');
+      if (wCur) parts.push('น้ำ');
+      if (document.getElementById('single-est').checked) parts.push('ประมาณการ');
+      location.href = 's04-room-detail.html?room=' + room + '&banner=' + encodeURIComponent('บันทึกมิเตอร์ (' + parts.join(', ') + ') ห้อง ' + room + ' แล้ว') + qsAmp;
+    }, 600);
+
+    document.getElementById('ack-btn').addEventListener('click', function () { Demo.closeDialog('conflict-dialog'); });
+  }
+</script>
+</body>
+</html>

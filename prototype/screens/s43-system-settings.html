@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S43 · ตั้งค่าระบบ — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+<style>
+  /* Capped, not full-bleed: at 1440px a 1fr label column puts a metre of empty
+     space between "ค่าปรับล่าช้า" and the field you type it into. */
+  .pol-row { display: grid; grid-template-columns: minmax(0, 1fr) 150px 90px; gap: 14px; align-items: center;
+    max-width: 760px; padding: 13px 0; border-bottom: 1px solid var(--border); }
+  .pol-row:last-child { border-bottom: none; }
+  .pol-name { font-weight: 600; font-size: 14px; }
+  .pol-note { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .pol-row input { width: 100%; text-align: right; font-family: var(--font-mono); font-weight: 600; font-size: 15px; }
+  .pol-unit { font-size: 12px; color: var(--text-muted); }
+  .pol-changed { color: var(--warning); font-size: 11px; font-weight: 600; }
+  .effect-line { font-size: 13px; padding: 7px 0; border-bottom: 1px dashed var(--border); }
+  .effect-line:last-child { border-bottom: none; }
+  .effect-line b { font-family: var(--font-mono); }
+</style>
+</head>
+<body data-style="a" data-screen="S43" data-title="ตั้งค่าระบบ">
+<div class="page-content" id="page-content">
+
+  <div data-admin-only>
+
+    <!-- Every number on this page was hardcoded in a screen until now. The point
+         of S43 is that the owner sets their own rules; the preview panel exists
+         so a change is never abstract — you see the ฿ it moves before saving. -->
+    <div class="card">
+      <div class="page-header-row">
+        <h3 style="margin:0;">กฎการเก็บเงิน</h3>
+        <div class="spacer"></div>
+        <span class="muted" style="font-size:12px;">แก้ได้เฉพาะเจ้าของ — มีผลกับบิลรอบถัดไป</span>
+      </div>
+      <div id="group-billing" style="margin-top:8px;"></div>
+    </div>
+
+    <div class="card">
+      <div class="page-header-row">
+        <h3 style="margin:0;">เงินประกันและค่าบริการ</h3>
+        <div class="spacer"></div>
+        <span class="muted" style="font-size:12px;">ใช้เป็นค่าตั้งต้น — แก้รายสัญญาได้ตอนทำสัญญา</span>
+      </div>
+      <div id="group-deposit" style="margin-top:8px;"></div>
+      <div class="rule-note" style="margin-top:14px;">
+        เงินประกัน (รายเดือน) กับมัดจำกุญแจ (รายวัน) เป็นเงินคนละก้อน ระบบไม่รวมกันในทุกหน้าจอ —
+        เงินประกันคืนตอนหมดสัญญา มัดจำกุญแจคืนตอนคืนกุญแจ
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="page-header-row">
+        <h3 style="margin:0;">การแจ้งเตือน</h3>
+        <div class="spacer"></div>
+        <span class="muted" style="font-size:12px;">การแจ้งเตือนในแอปปิดไม่ได้ (กฎ 6.13)</span>
+      </div>
+      <div id="group-notice" style="margin-top:8px;"></div>
+      <div class="rule-note" style="margin-top:14px;">
+        LINE เป็นช่องทางเสริมที่ผู้เช่าเลือกเปิดเอง (S38) — ส่งได้เฉพาะยอดเงินและวันครบกำหนด
+        <strong>ไม่ส่งสลิปและไม่ส่งข้อมูลส่วนตัว</strong> การแจ้งเตือนในแอปยังเป็นหลักฐานว่าแจ้งผู้เช่าแล้วเสมอ
+      </div>
+    </div>
+
+    <!-- Prices are NOT here on purpose: S24 is the only screen that edits them
+         (CLAUDE.md rule 11). Saying so out loud stops the owner hunting. -->
+    <div class="card">
+      <h3 style="margin:0 0 10px;">ผลของการแก้ค่าเหล่านี้</h3>
+      <div id="effects"></div>
+      <div class="page-header-row" style="margin-top:16px;">
+        <a class="btn btn-secondary" href="s24-room-settings.html" id="link-prices">ราคาห้องและค่าน้ำ-ไฟอยู่ที่หน้า S24 →</a>
+        <div class="spacer"></div>
+        <button type="button" class="btn btn-ghost" id="btn-reset">คืนค่าเดิม</button>
+        <button type="button" class="btn btn-primary" id="btn-save">บันทึกการตั้งค่า</button>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="card" id="no-access-card" style="display:none;">
+    <p>หน้านี้สำหรับเจ้าของเท่านั้น — พนักงานเปลี่ยนกฎของหอพักไม่ได้</p>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var role = window.AmanewRole ? window.AmanewRole.current() : 'admin';
+
+  var GROUPS = {
+    'group-billing': ['billIssueDay', 'dueDay', 'graceDays', 'lateFeePerDay'],
+    'group-deposit': ['depositMonths', 'keyDeposit', 'cleaningFee'],
+    'group-notice':  ['dueReminderDays', 'renewalNoticeDays']
+  };
+
+  // Snapshot on load so "คืนค่าเดิม" is real and so each row can show that it
+  // differs from what the property is running on right now.
+  var ORIGINAL = {};
+  Object.keys(D.POLICY).forEach(function (k) { ORIGINAL[k] = D.POLICY[k].value; });
+
+  function rowHtml(key) {
+    var p = D.POLICY[key];
+    return '<div class="pol-row" data-row="' + key + '">' +
+      '<div><div class="pol-name">' + p.label + '</div><div class="pol-note">' + p.note +
+        '<span class="pol-changed" data-changed="' + key + '"></span></div></div>' +
+      '<input type="number" data-k="' + key + '" value="' + p.value + '" min="' + p.min + '" max="' + p.max + '" step="1">' +
+      '<span class="pol-unit">' + p.unit + '</span>' +
+    '</div>';
+  }
+
+  Object.keys(GROUPS).forEach(function (id) {
+    document.getElementById(id).innerHTML = GROUPS[id].map(rowHtml).join('');
+  });
+
+  // The consequence panel. Late fee and deposit are the two the owner actually
+  // reasons about, so both are shown as money against real demo numbers rather
+  // than as a restatement of the setting.
+  function renderEffects() {
+    var lateDays = 10;
+    var sample = D.room('105');
+    var standardRent = D.rentFor(sample);
+    document.getElementById('effects').innerHTML =
+      '<div class="effect-line">บิลออกวันที่ <b>' + D.policy('billIssueDay') + '</b> ของเดือน · ครบกำหนดวันที่ <b>' +
+        D.policy('dueDay') + '</b> · ค่าปรับเริ่มวันที่ <b>' + (D.policy('graceDays') + 1) + '</b></div>' +
+      '<div class="effect-line">ค้างชำระ ' + lateDays + ' วัน = ค่าปรับ <b>' + D.money(D.lateFee(lateDays)) +
+        '</b> (' + (lateDays - D.policy('graceDays')) + ' วัน × ' + D.money(D.policy('lateFeePerDay')) + ')</div>' +
+      '<div class="effect-line">' + D.roomTypeOf(sample).label + ' ' + D.money(standardRent) + '/เดือน → เงินประกันตั้งต้น <b>' +
+        D.money(standardRent * D.policy('depositMonths')) + '</b> (' + D.policy('depositMonths') + ' เดือน)</div>' +
+      '<div class="effect-line">สัญญาที่จะขึ้นเตือนในหน้าวันนี้ตอนนี้: <b>' +
+        D.rooms.filter(function (r) { var c = D.contractOf(r); return c && c.expiringSoon; }).length +
+        '</b> ห้อง (ภายใน ' + D.policy('renewalNoticeDays') + ' วัน)</div>';
+
+    Object.keys(D.POLICY).forEach(function (k) {
+      var el = document.querySelector('[data-changed="' + k + '"]');
+      if (el) el.textContent = D.POLICY[k].value !== ORIGINAL[k] ? '  · แก้แล้ว (เดิม ' + ORIGINAL[k] + ')' : '';
+    });
+  }
+
+  document.querySelectorAll('[data-k]').forEach(function (inp) {
+    inp.addEventListener('input', function () {
+      var p = D.POLICY[inp.dataset.k];
+      var v = Number(inp.value);
+      if (isNaN(v) || v < p.min || v > p.max) return; // out of range: ignore, don't fight the typist
+      p.value = v;
+      renderEffects();
+    });
+  });
+
+  document.getElementById('btn-reset').addEventListener('click', function () {
+    Object.keys(ORIGINAL).forEach(function (k) { D.POLICY[k].value = ORIGINAL[k]; });
+    document.querySelectorAll('[data-k]').forEach(function (i) { i.value = D.POLICY[i.dataset.k].value; });
+    renderEffects();
+  });
+
+  document.getElementById('btn-save').addEventListener('click', function (e) {
+    var changed = Object.keys(D.POLICY).filter(function (k) { return D.POLICY[k].value !== ORIGINAL[k]; });
+    var pc = document.getElementById('page-content');
+    var old = pc.querySelector('.success-banner');
+    if (old) old.remove();
+    var banner = document.createElement('div');
+    banner.className = 'success-banner';
+    banner.innerHTML = changed.length
+      ? '✓ บันทึกแล้ว ' + changed.length + ' รายการ — มีผลกับบิลรอบถัดไป บิลที่ออกไปแล้วใช้ค่าเดิมที่บันทึกไว้ในบิลนั้น'
+      : '✓ ไม่มีอะไรเปลี่ยน';
+    pc.insertBefore(banner, pc.firstChild);
+    changed.forEach(function (k) { ORIGINAL[k] = D.POLICY[k].value; });
+    renderEffects();
+  });
+
+  // Keep query params on the cross-link like every other nav link.
+  document.getElementById('link-prices').href = 's24-room-settings.html' + location.search;
+
+  renderEffects();
+
+  if (role !== 'admin') {
+    document.querySelector('[data-admin-only]').style.display = 'none';
+    document.getElementById('no-access-card').style.display = 'block';
+  }
+</script>
+</body>
+</html>

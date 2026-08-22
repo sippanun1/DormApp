@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S39 · บันทึกกำไร — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S39" data-title="บันทึกกำไร">
+<div class="page-content" id="page-content">
+
+  <div data-admin-only>
+    <div class="card">
+      <div class="page-header-row">
+        <div>
+          <h3 style="margin:0;" id="hero-title">บันทึกกำไร</h3>
+          <p class="muted" style="font-size:12px; margin-top:4px;">ยอดมาจากสลิปที่ตรวจแล้วทั้งหมด — ไม่ต้องกรอกเอง ตรวจสลิปที่หน้า “รอตรวจสอบ” แล้วยอดจะขึ้นที่นี่เอง</p>
+        </div>
+        <div class="spacer"></div>
+        <a class="btn btn-secondary" href="s21-verification-queue.html" id="queue-link">ไปที่คิวรอตรวจสอบ →</a>
+        <a class="btn btn-secondary" href="s40-reports.html" id="report-link">ดูรายงานสรุป →</a>
+      </div>
+
+      <div class="profit-hero" style="margin-top:16px;">
+        <span class="ph-num" id="hero-profit"></span>
+        <span class="ph-cap" id="hero-cap"></span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 2px;">กำไรย้อนหลัง 6 เดือน</h3>
+      <p class="muted" style="font-size:12px; margin:0 0 8px;">เทียบกับค่าเฉลี่ยของตึกเอง ไม่ใช่ของตึกอื่น · กดที่แถบเพื่อดูรายการของเดือนนั้น</p>
+      <div class="profit-chart" id="profit-chart"></div>
+      <div class="profit-verdict" id="profit-verdict"></div>
+    </div>
+
+    <div class="card">
+      <div class="page-header-row">
+        <div>
+          <h3 style="margin:0;">รายการที่บันทึกไว้ — <span id="rows-month"></span></h3>
+          <p class="muted" style="font-size:12px; margin-top:4px;" id="rows-caption"></p>
+        </div>
+      </div>
+      <table class="data-table" style="margin-top:12px;">
+        <thead><tr>
+          <th style="width:80px;">เลขที่บิล</th>
+          <th style="width:70px;">ห้อง</th>
+          <th>ผู้เช่า</th>
+          <th style="width:100px;">วันที่ตรวจ</th>
+          <th style="width:90px;">วิธีชำระ</th>
+          <th style="width:100px;">ตรวจโดย</th>
+          <th class="td-money" style="width:120px;">ยอด</th>
+        </tr></thead>
+        <tbody id="slip-rows"></tbody>
+      </table>
+      <div class="rule-note" style="margin-top:10px;">
+        รายการเหล่านี้แก้หรือลบที่นี่ไม่ได้ — ออกใบเสร็จให้ผู้เช่าไปแล้ว ถ้ายอดผิดต้องแก้ที่บิล (กฎ 13.4 · ใบเสร็จเป็นเอกสารถาวร)
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="no-access-card" style="display:none;">
+    <p>หน้านี้สำหรับเจ้าของและพนักงานที่ได้รับสิทธิ์ดูรายงานการเงินเท่านั้น</p>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var role = window.AmanewRole ? window.AmanewRole.current() : 'admin';
+  var METHOD_LABEL = { cash: 'เงินสด', transfer: 'โอนธนาคาร', qr: 'QR พร้อมเพย์' };
+
+  document.getElementById('report-link').href = 's40-reports.html' + qs;
+  document.getElementById('queue-link').href = 's21-verification-queue.html' + qs;
+
+  // The month being read. Defaults to the newest, and the chart bars switch it —
+  // there is no separate month dropdown to keep in sync with the chart.
+  var months = D.profitByMonth();
+  var activeSort = months[months.length - 1].sort;
+
+  function renderHero() {
+    var s = D.profitSummary(activeSort);
+    document.getElementById('hero-title').textContent = 'บันทึกกำไร — ' + s.current.month;
+    document.getElementById('hero-profit').textContent = D.money(s.current.amount);
+    document.getElementById('hero-cap').textContent =
+      'จากสลิปที่ตรวจแล้ว ' + s.current.count + ' รายการในเดือน ' + s.current.month;
+  }
+
+  function renderChart() {
+    var s = D.profitSummary(activeSort);
+    // Zero-baselined against the best month, so the bars compare profit itself
+    // rather than the gap between the best and the worst month.
+    var peak = s.months.reduce(function (m, e) { return Math.max(m, e.amount); }, 0) || 1;
+    document.getElementById('profit-chart').innerHTML = s.months.map(function (m) {
+      return '<div class="profit-row' + (m.sort === activeSort ? ' is-now' : '') + '" data-month="' + m.sort + '" style="cursor:pointer;">' +
+        '<span class="pr-lb">' + m.month + '</span>' +
+        '<span class="pr-track"><span class="pr-bar" style="width:' + Math.round((m.amount / peak) * 100) + '%;"></span></span>' +
+        '<span class="pr-vl">' + D.money(m.amount) + '</span>' +
+      '</div>';
+    }).join('');
+
+    // Three states, and it only tints amber on the bad side — a good month must
+    // not look like a warning.
+    var verdict = document.getElementById('profit-verdict');
+    verdict.classList.remove('down');
+    var avg = D.money(Math.round(s.avg));
+    if (s.diff >= 10) {
+      verdict.textContent = 'เดือนนี้กำไรมากกว่าค่าเฉลี่ย 6 เดือน (' + avg + ') อยู่ ' + s.diff + '%';
+    } else if (s.diff <= -10) {
+      verdict.textContent = 'เดือนนี้กำไรน้อยกว่าค่าเฉลี่ย 6 เดือน (' + avg + ') อยู่ ' + Math.abs(s.diff) + '%';
+      verdict.classList.add('down');
+    } else {
+      verdict.textContent = 'เดือนนี้กำไรใกล้เคียงค่าเฉลี่ย 6 เดือน (' + avg + ')';
+    }
+
+    document.querySelectorAll('[data-month]').forEach(function (row) {
+      row.addEventListener('click', function () {
+        activeSort = parseInt(row.dataset.month, 10);
+        renderAll();
+      });
+    });
+  }
+
+  function renderRows() {
+    var rows = D.verifiedFor(activeSort);
+    var m = months.filter(function (x) { return x.sort === activeSort; })[0];
+    document.getElementById('rows-month').textContent = m.month;
+    document.getElementById('rows-caption').textContent =
+      'สลิปที่ตรวจแล้ว ' + rows.length + ' รายการ · รวม ' + D.money(m.amount);
+    document.getElementById('slip-rows').innerHTML = rows.map(function (p) {
+      return '<tr>' +
+        '<td class="td-muted">#' + p.invoice + '</td>' +
+        '<td style="font-family:var(--font-mono);">' + p.room + '</td>' +
+        '<td>' + p.tenant +
+          (p.kind === 'daily' ? ' <span class="status-badge sm badge-info">รายวัน ' + p.nights + ' คืน</span>' : '') +
+          (p.lateFee ? ' <span class="status-badge sm badge-warning">ค่าปรับ ' + D.money(p.lateFee) + '</span>' : '') +
+        '</td>' +
+        '<td class="td-muted">' + p.date + '</td>' +
+        '<td class="td-muted">' + METHOD_LABEL[p.method] + '</td>' +
+        '<td class="td-muted">' + p.by + '</td>' +
+        '<td class="td-money" style="color:var(--success); font-weight:600;">' + D.money(p.total) + '</td>' +
+      '</tr>';
+    }).join('');
+  }
+
+  function renderAll() { renderHero(); renderChart(); renderRows(); }
+  renderAll();
+
+  if (role === 'worker') {
+    document.getElementById('no-access-card').style.display = 'block';
+  }
+</script>
+</body>
+</html>

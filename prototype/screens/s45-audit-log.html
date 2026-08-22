@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S45 · ประวัติการใช้งาน — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .log-day { font-size: 12px; font-weight: 700; color: var(--text-muted); margin: 18px 0 8px; }
+  .log-item { display: grid; grid-template-columns: 62px 1fr; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .log-item:last-child { border-bottom: none; }
+  .log-time { font-family: var(--font-mono); font-size: 12px; color: var(--text-muted); padding-top: 2px; }
+  .log-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .log-target { font-weight: 600; font-size: 14px; }
+  .log-detail { font-size: 13px; margin-top: 3px; }
+  .log-who { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+</style>
+</head>
+<body data-style="a" data-screen="S45" data-title="ประวัติการใช้งาน">
+<div class="page-content" id="page-content">
+
+  <div data-admin-only>
+    <div class="card">
+      <div class="page-header-row">
+        <div>
+          <h3 style="margin:0;">ประวัติการใช้งาน</h3>
+          <p class="muted" style="font-size:12px; margin-top:4px;">
+            ทุกการกระทำที่กระทบเงินหรือสิทธิ์ ถูกบันทึกไว้ที่นี่ — เพิ่มได้อย่างเดียว แก้ไม่ได้ ลบไม่ได้ แม้แต่เจ้าของ
+          </p>
+        </div>
+        <div class="spacer"></div>
+        <div class="kpi-tile" style="min-width:130px;">
+          <div class="kpi-num" id="k-count"></div><div class="kpi-label">รายการทั้งหมด</div>
+        </div>
+      </div>
+
+      <div class="settings-filters" style="margin-top:14px;">
+        <div class="sf-group">
+          <span class="sf-label">ประเภท</span>
+          <div class="floor-jump" id="f-kind"></div>
+        </div>
+        <div class="sf-group">
+          <span class="sf-label">ผู้ใช้</span>
+          <div class="floor-jump" id="f-who"></div>
+        </div>
+      </div>
+
+      <div id="log"></div>
+      <div class="muted" style="font-size:12px; margin-top:12px;" id="summary"></div>
+    </div>
+
+    <div class="card">
+      <div class="rule-note">
+        หน้านี้คือหลักฐานเวลามีข้อโต้แย้ง — "ใครลดยอดบิลนี้", "ใครแก้ค่ามิเตอร์ห้องนี้", "ใครลบรายจ่ายก้อนนั้น"
+        การแก้บิลที่นี่คือรายการเดียวกับที่ผู้เช่าเห็นในแอปของตัวเอง (S34) ไม่มีประวัติสองชุด
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="no-access-card" style="display:none;">
+    <p>หน้านี้สำหรับเจ้าของเท่านั้น (สิทธิ์ "ดูประวัติการใช้งาน" ใน S26)</p>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var role = window.AmanewRole ? window.AmanewRole.current() : 'admin';
+  var filters = { kind: 'all', who: 'all' };
+
+  // Filter chips are built from the log itself, so a kind that never happened
+  // never offers an empty filter.
+  var kindsPresent = Object.keys(D.AUDIT_KINDS).filter(function (k) {
+    return D.auditLog.some(function (e) { return e.kind === k; });
+  });
+  document.getElementById('f-kind').innerHTML =
+    '<button type="button" data-v="all" class="active">ทั้งหมด</button>' +
+    kindsPresent.map(function (k) {
+      return '<button type="button" data-v="' + k + '">' + D.AUDIT_KINDS[k].icon + ' ' + D.AUDIT_KINDS[k].label + '</button>';
+    }).join('');
+
+  var whoPresent = D.auditLog.map(function (e) { return e.by; }).filter(function (v, i, a) { return a.indexOf(v) === i; });
+  document.getElementById('f-who').innerHTML =
+    '<button type="button" data-v="all" class="active">ทุกคน</button>' +
+    whoPresent.map(function (w) { return '<button type="button" data-v="' + w + '">' + w + '</button>'; }).join('');
+
+  function visible() {
+    return D.auditLog.filter(function (e) {
+      return (filters.kind === 'all' || e.kind === filters.kind) &&
+             (filters.who === 'all' || e.by === filters.who);
+    });
+  }
+
+  function render() {
+    var list = visible();
+    document.getElementById('k-count').textContent = D.auditLog.length;
+
+    // Grouped by day: a log read as one flat run of timestamps is unreadable.
+    var html = '', lastDay = null;
+    list.forEach(function (e) {
+      var day = e.at.slice(0, e.at.lastIndexOf(' '));
+      var time = e.at.slice(e.at.lastIndexOf(' ') + 1);
+      if (day !== lastDay) { html += '<div class="log-day">' + day + '</div>'; lastDay = day; }
+      var k = D.AUDIT_KINDS[e.kind];
+      html += '<div class="log-item">' +
+        '<div class="log-time">' + time + '</div>' +
+        '<div>' +
+          '<div class="log-head">' +
+            '<span class="status-badge ' + k.badge + '">' + k.icon + ' ' + k.label + '</span>' +
+            '<span class="log-target">' + e.target + '</span>' +
+          '</div>' +
+          '<div class="log-detail">' + e.detail + '</div>' +
+          '<div class="log-who">โดย ' + e.by + '</div>' +
+        '</div>' +
+      '</div>';
+    });
+    document.getElementById('log').innerHTML = html ||
+      '<p class="muted" style="margin:18px 0;">ไม่มีรายการในตัวกรองนี้</p>';
+    document.getElementById('summary').textContent = 'แสดง ' + list.length + ' จาก ' + D.auditLog.length + ' รายการ';
+  }
+
+  function bindFilter(id, key) {
+    document.getElementById(id).addEventListener('click', function (e) {
+      var btn = e.target.closest('button[data-v]');
+      if (!btn) return;
+      document.querySelectorAll('#' + id + ' button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+      filters[key] = btn.dataset.v;
+      render();
+    });
+  }
+  bindFilter('f-kind', 'kind');
+  bindFilter('f-who', 'who');
+
+  render();
+
+  if (role !== 'admin') {
+    document.querySelector('[data-admin-only]').style.display = 'none';
+    document.getElementById('no-access-card').style.display = 'block';
+  }
+</script>
+</body>
+</html>

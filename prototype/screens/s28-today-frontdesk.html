@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S28 · หน้าวันนี้ — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .today-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .today-row:last-child { border-bottom: none; }
+  .today-row .tr-room { font-family: var(--font-mono); font-weight: 700; width: 44px; }
+  .today-row .tr-main { flex: 1; }
+  .today-row .tr-name { font-weight: 600; }
+  .today-row .tr-time { font-size: 12px; color: var(--text-muted); }
+</style>
+</head>
+<body data-style="a" data-screen="S28" data-title="หน้าวันนี้">
+<div class="page-content" id="page-content">
+
+  <div class="card">
+    <h3>หน้าวันนี้ — หน้าจอต้อนรับ (Front Desk)</h3>
+    <p class="muted" style="font-size:12px;">มุมมองสรุปงานวันนี้ — ยังไม่ได้ journey-map เต็มรูปแบบ (Master Document §15) แสดงข้อมูลสาธิตจากห้องที่มีในระบบ</p>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:14px;">เช็คอินวันนี้</h3>
+    <div id="arrivals-list"></div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:14px;">เช็คเอาท์วันนี้</h3>
+    <div id="departures-list"></div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:14px;">สัญญาใกล้ครบกำหนด <span class="muted" style="font-weight:400; font-size:12px;">(ภายใน 30 วัน — กฎ 4.9)</span></h3>
+    <div id="renewals-list"></div>
+  </div>
+
+  <div class="card">
+    <h3 style="font-size:14px;">รอดำเนินการ</h3>
+    <div id="pending-list"></div>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+
+  function row(room, name, time, actionLabel, actionHref) {
+    return '<div class="today-row"><span class="tr-room">' + room + '</span>' +
+      '<div class="tr-main"><div class="tr-name">' + name + '</div><div class="tr-time">' + time + '</div></div>' +
+      (actionHref ? '<a class="btn btn-sm btn-primary" href="' + actionHref + '">' + actionLabel + '</a>' : '') +
+      '</div>';
+  }
+  function empty(text) { return '<p class="muted" style="font-size:13px;">' + text + '</p>'; }
+
+  var arrivals = D.rooms.filter(function (r) { return r.state === 'reserved'; });
+  document.getElementById('arrivals-list').innerHTML = arrivals.length
+    ? arrivals.map(function (r) { return row(r.number, r.occupant, 'เช็คอิน ' + (r.checkIn || '-'), 'แขกมาถึงแล้ว', 's04-room-detail.html?room=' + r.number); }).join('')
+    : empty('ไม่มีการจองที่รอเช็คอินวันนี้');
+
+  var departures = D.rooms.filter(function (r) { return r.rentalType === 'daily' && r.state === 'occupied' && r.checkOut; });
+  document.getElementById('departures-list').innerHTML = departures.length
+    ? departures.map(function (r) { return row(r.number, r.occupant, 'เช็คเอาท์ ' + r.checkOut, 'เช็คเอาท์', 's27-checkout-summary.html?room=' + r.number); }).join('')
+    : empty('ไม่มีกำหนดเช็คเอาท์วันนี้');
+
+  // Expiring contracts — the alert Rule 4.9 asks for, surfaced where staff
+  // already look each morning rather than only on the room's own page.
+  var renewals = D.rooms.filter(function (r) {
+    var c = D.contractOf(r);
+    return c && (c.expiringSoon || c.expired);
+  });
+  document.getElementById('renewals-list').innerHTML = renewals.length
+    ? renewals.map(function (r) {
+        var c = D.contractOf(r);
+        return row(r.number, r.occupant,
+          c.expired ? 'ครบกำหนดแล้ว ' + c.endLabel : 'ครบกำหนด ' + c.endLabel + ' — เหลือ ' + c.daysLeft + ' วัน',
+          'ต่อสัญญา', 's35-contract-renewal.html?room=' + r.number);
+      }).join('')
+    : empty('ไม่มีสัญญาที่ใกล้ครบกำหนดใน 30 วันนี้');
+
+  var pending = D.invoiceList.filter(function (i) { return i.status === 'pending_verification'; });
+  document.getElementById('pending-list').innerHTML = pending.length
+    ? pending.map(function (i) { return row(i.room, i.tenant, 'รอตรวจสอบ ' + (i.waitingDays || 0) + ' วัน', 'ตรวจสอบ', 's22-verification-detail.html?invoice=' + i.number); }).join('')
+    : empty('ไม่มีรายการรอดำเนินการ');
+</script>
+</body>
+</html>

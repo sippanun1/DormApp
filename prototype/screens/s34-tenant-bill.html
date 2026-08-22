@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S34 · ใบแจ้งหนี้ของฉัน — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .past-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .past-row:last-child { border-bottom: none; }
+</style>
+</head>
+<body data-style="a">
+<div class="phone-stage">
+  <div class="phone-frame">
+    <div class="phone-header">
+      <a class="btn btn-ghost btn-sm" href="s33-tenant-home.html">←</a>
+      <span>ใบแจ้งหนี้ของฉัน</span>
+      <div class="spacer" style="flex:1;"></div>
+      <span class="screen-id">S34 · บิลผู้เช่า</span>
+    </div>
+    <div class="phone-body">
+
+      <div class="invoice-card" id="invoice-card"></div>
+
+      <!-- Placed directly under the bill, not on the home screen: this answers
+           "ทำไมบิลนี้แพง" at the moment the tenant is asking it. -->
+      <div class="card">
+        <h3 style="font-size:14px;">การใช้น้ำ-ไฟย้อนหลัง 6 เดือน</h3>
+        <p class="muted" style="font-size:12px; margin:4px 0 0;">นับเป็นหน่วยที่ใช้จริง ไม่ใช่เป็นบาท — ถ้าอัตราค่าไฟเปลี่ยน กราฟนี้จะไม่ขยับ</p>
+
+        <div class="section-title" style="margin-top:14px;">⚡ ไฟฟ้า (หน่วย/เดือน)</div>
+        <div class="usage-chart" id="chart-electric"></div>
+        <div id="verdict-electric"></div>
+
+        <div class="section-title" style="margin-top:18px;">💧 น้ำ (หน่วย/เดือน)</div>
+        <div class="usage-chart" id="chart-water"></div>
+        <div id="verdict-water"></div>
+
+        <p class="muted" style="font-size:11px; margin-top:12px;" id="rate-note"></p>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size:14px;">ประวัติบิลย้อนหลัง</h3>
+        <div id="past-list"></div>
+      </div>
+
+      <div class="demo-note">หน้านี้เป็นแอปแยกสำหรับผู้เช่า — ไม่ใช้เมนู/แถบด้านข้างของฝั่งพนักงาน</div>
+    </div>
+  </div>
+</div>
+
+<script src="../switcher.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script>
+  var D = window.AmanewData;
+  var th = D.tenantHome;
+  var inv = th.currentInvoice;
+  var STATUS_LABEL = {
+    unpaid: ['ค้างชำระ', 'badge-danger'], pending_verification: ['รอตรวจสอบ', 'badge-warning'],
+    paid: ['ชำระแล้ว', 'badge-success'], rejected: ['ถูกปฏิเสธ', 'badge-neutral']
+  };
+
+  var s = STATUS_LABEL[inv.status];
+  document.getElementById('invoice-card').innerHTML =
+    '<div class="ic-head"><h3>ใบแจ้งหนี้ #' + inv.number + '</h3><span class="status-badge ' + s[1] + '">' + s[0] + '</span></div>' +
+    '<div class="ic-line"><span class="ic-desc">ค่าเช่าห้อง</span><span class="ic-amt">' + D.money(inv.roomCharge) + '</span></div>' +
+    (inv.utilityPeriods
+      ? (inv.transferNote ? '<div class="transfer-note">↪ ' + inv.transferNote + '</div>' : '') +
+        inv.utilityPeriods.map(function (p) {
+          return '<div class="util-period">' +
+            '<div class="up-head">ค่าน้ำ-ไฟ · <span class="up-room">ห้อง ' + p.room + '</span> ' + p.fromLabel + ' – ' + p.toLabel + '</div>' +
+            '<div class="ic-line"><span class="ic-desc">ค่าไฟฟ้า (' + p.electric.units + ' หน่วย)</span><span class="ic-amt">' + D.money(p.electric.cost) + '</span></div>' +
+            '<div class="ic-line"><span class="ic-desc">ค่าน้ำ (' + p.water.units + ' หน่วย)</span><span class="ic-amt">' + D.money(p.water.cost) + '</span></div>' +
+          '</div>';
+        }).join('')
+      : inv.electric && inv.water
+        ? '<div class="ic-line"><span class="ic-desc">ค่าไฟฟ้า (' + inv.electric.units + ' หน่วย × ' + D.money(inv.electric.rate) + ')</span><span class="ic-amt">' + D.money(inv.electric.cost) + '</span></div>' +
+          '<div class="ic-line"><span class="ic-desc">ค่าน้ำ (' + inv.water.units + ' หน่วย × ' + D.money(inv.water.rate) + ')</span><span class="ic-amt">' + D.money(inv.water.cost) + '</span></div>'
+        : '<div class="ic-line"><span class="ic-desc">ค่าน้ำ-ไฟ</span><span class="ic-amt">' + D.money(inv.utilitySubtotal) + '</span></div>') +
+    (inv.lateFeeFrozen ? '<div class="ic-line ic-late"><span class="ic-desc">ค่าปรับล่าช้า</span><span class="ic-amt">' + D.money(inv.lateFeeFrozen) + '</span></div>' : '') +
+    '<div class="ic-total"><span>รวมทั้งสิ้น</span><span>' + D.money(inv.total) + '</span></div>' +
+    '<p class="muted" style="font-size:12px; margin:6px 0 0;">ครบกำหนด ' + inv.dueDate + '</p>';
+
+  var past = D.invoiceList.filter(function (i) { return i.room === th.room && i.number !== inv.number; });
+  document.getElementById('past-list').innerHTML = past.length
+    ? past.map(function (i) {
+        var ps = STATUS_LABEL[i.status] || ['-', 'badge-neutral'];
+        return '<div class="past-row"><span>#' + i.number + ' — ' + i.dueDate + '</span>' +
+          '<span class="status-badge sm ' + ps[1] + '">' + ps[0] + '</span></div>';
+      }).join('')
+    : '<p class="muted" style="font-size:13px;">ยังไม่มีบิลย้อนหลัง</p>';
+
+  /* ---- Six-month usage chart ---- */
+  var hist = D.utilityHistory(th.room, inv);
+
+  function drawChart(elId, values, color) {
+    var max = Math.max.apply(null, values);
+    document.getElementById(elId).innerHTML = values.map(function (v, i) {
+      var now = i === values.length - 1;
+      return '<div class="usage-col' + (now ? ' is-now' : '') + '">' +
+        '<span class="u-vl">' + v + '</span>' +
+        // Past months are the same colour at low opacity, not grey: grey on the
+        // grey track disappeared entirely, and a different hue would read as a
+        // different measurement.
+        '<span class="usage-bar"><span style="height:' + Math.round(v / max * 100) + '%; background:' + color +
+          (now ? '' : '; opacity:.32') + ';"></span></span>' +
+        '<span class="u-lb">' + hist.labels[i] + '</span>' +
+      '</div>';
+    }).join('');
+  }
+
+  // The tenant is compared against their OWN six-month average, never against
+  // another room — a bigger family in a bigger room is not overspending.
+  function verdict(elId, pct, unitWord, current) {
+    var el = document.getElementById(elId);
+    var text;
+    if (pct >= 10) text = 'เดือนนี้ใช้ <strong>' + current + ' ' + unitWord + '</strong> — มากกว่าค่าเฉลี่ย 6 เดือนของห้องนี้ <strong>' + pct + '%</strong>';
+    else if (pct <= -10) text = 'เดือนนี้ใช้ <strong>' + current + ' ' + unitWord + '</strong> — น้อยกว่าค่าเฉลี่ย 6 เดือนของห้องนี้ ' + Math.abs(pct) + '%';
+    else text = 'เดือนนี้ใช้ <strong>' + current + ' ' + unitWord + '</strong> — ใกล้เคียงค่าเฉลี่ยปกติของห้องนี้';
+    el.className = 'usage-verdict' + (pct >= 10 ? ' up' : '');
+    el.innerHTML = text;
+  }
+
+  drawChart('chart-electric', hist.electric, 'var(--warning)');
+  drawChart('chart-water', hist.water, 'var(--info)');
+  verdict('verdict-electric', hist.electricVsAvg, 'หน่วย', hist.electric[5]);
+  verdict('verdict-water', hist.waterVsAvg, 'หน่วย', hist.water[5]);
+  document.getElementById('rate-note').textContent =
+    'อัตราปัจจุบัน: ไฟฟ้า ' + D.money(D.UTILITY_RATES.electric) + '/หน่วย · น้ำ ' + D.money(D.UTILITY_RATES.water) +
+    '/หน่วย — บิลที่ออกไปแล้วใช้อัตราที่บันทึกไว้ในบิลนั้น';
+</script>
+</body>
+</html>

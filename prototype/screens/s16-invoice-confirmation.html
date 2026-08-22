@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S16 · ออกบิลห้องเดียว — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S16" data-title="ออกบิลห้องเดียว">
+<div class="page-content" id="page-content">
+
+  <div id="picker-card" class="card" style="max-width:560px;">
+    <h3>เลือกห้องที่จะออกบิล</h3>
+    <p class="muted" style="font-size:13px;">ห้องเหล่านี้มีเลขมิเตอร์ครบแล้วแต่ยังไม่มีใบแจ้งหนี้ (กรณีนอกรอบปกติ) — รอบบิลปกติทั้งตึกให้ใช้ "สร้างบิลประจำเดือน" แทน</p>
+    <table class="data-table">
+      <thead><tr><th>ห้อง</th><th>ผู้เช่า</th><th>เหตุผล</th><th></th></tr></thead>
+      <tbody id="picker-rows"></tbody>
+    </table>
+  </div>
+
+  <div id="invoice-card" class="card" style="max-width:480px; display:none;">
+    <p class="muted" style="font-size:13px; margin:0 0 4px;">ออกบิลห้องเดียว — สำหรับกรณีนอกรอบปกติ (เช่น ย้ายเข้าใหม่ระหว่างเดือน) ต่างจาก "สร้างบิลประจำเดือน" ที่ทำทีเดียวทั้งตึก</p>
+    <div class="invoice-card">
+      <div class="ic-head"><h3>ห้อง <span id="room-label"></span> — งวด <span id="period-label"></span></h3></div>
+      <div class="ic-line"><span class="ic-desc">ค่าเช่าห้อง</span><span class="ic-amt" id="room-charge"></span></div>
+      <div class="ic-line">
+        <span class="ic-desc">ค่าไฟฟ้า<span class="ic-calc" id="e-calc"></span></span>
+        <span class="ic-amt" id="e-cost"></span>
+      </div>
+      <div class="ic-line">
+        <span class="ic-desc">ค่าน้ำ<span class="ic-calc" id="w-calc"></span></span>
+        <span class="ic-amt" id="w-cost"></span>
+      </div>
+      <div class="ic-line"><span class="ic-desc">รวมค่าน้ำ-ไฟ</span><span class="ic-amt" id="utility-subtotal"></span></div>
+      <div id="extra-lines"></div>
+      <div class="ic-total"><span>รวมทั้งสิ้น</span><span id="total"></span></div>
+    </div>
+
+    <!-- Line items before issuing. Business Rule 6.5: named charges/discounts,
+         positive or negative. Adding them here means the tenant is told the
+         right number the first time, instead of issuing then editing (S19).
+         Never a partial-payment field — this only changes what is owed. -->
+    <div id="items-editor" style="margin-top:16px;">
+      <div class="section-title" style="margin-bottom:8px;">เพิ่มรายการ / ส่วนลด (ไม่บังคับ)</div>
+      <div class="quick-items" style="margin-bottom:8px;" id="quick-items">
+        <button type="button" class="chip-btn" data-name="ส่วนลด" data-sign="-">− ส่วนลด</button>
+        <button type="button" class="chip-btn" data-name="ค่าทำความสะอาด" data-sign="+">+ ค่าทำความสะอาด</button>
+        <button type="button" class="chip-btn" data-name="ค่าซ่อมแซม" data-sign="+">+ ค่าซ่อมแซม</button>
+        <button type="button" class="chip-btn" data-name="ค่าที่จอดรถ" data-sign="+">+ ค่าที่จอดรถ</button>
+      </div>
+      <div class="line-item-row">
+        <input type="text" id="item-name" placeholder="ชื่อรายการ เช่น ค่าทำความสะอาด">
+        <input type="number" id="item-amount" step="50" placeholder="จำนวนเงิน">
+        <button type="button" class="btn btn-secondary btn-sm" id="item-add">เพิ่ม</button>
+      </div>
+      <div class="hint" style="margin-top:6px;">ใส่ค่าลบสำหรับส่วนลด (เช่น -500) — ต้องมีสิทธิ์ "ให้ส่วนลด"</div>
+      <div class="error" id="item-error" style="display:none; margin-top:6px;">กรุณากรอกชื่อรายการและจำนวนเงินที่ไม่ใช่ 0</div>
+    </div>
+
+    <div id="action-slot" style="margin-top:16px; display:flex; gap:10px;">
+      <button type="button" class="btn btn-primary" id="btn-generate" data-primary>ออกใบแจ้งหนี้</button>
+      <a class="btn btn-secondary" href="s16-invoice-confirmation.html" id="cancel-link">‹ เลือกห้องอื่น</a>
+    </div>
+    <div id="result-slot"></div>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var qsAmp = qs.replace(/^\?/, '&');
+  var params = new URLSearchParams(qs);
+  var roomParam = params.get('room');
+
+  if (!roomParam) {
+    document.getElementById('picker-rows').innerHTML = D.readyToInvoiceRooms.map(function (r) {
+      return '<tr><td>' + r.room + '</td><td class="td-muted">' + r.tenant + '</td>' +
+        '<td><span class="status-badge badge-warning">' + r.reason + '</span></td>' +
+        '<td><a class="btn btn-sm btn-primary" href="s16-invoice-confirmation.html?room=' + r.room + qsAmp + '">ออกบิล</a></td></tr>';
+    }).join('');
+  } else {
+    document.getElementById('picker-card').style.display = 'none';
+    document.getElementById('invoice-card').style.display = 'block';
+
+    var inv = D.invoicePreviewForRoom(roomParam);
+    document.getElementById('room-label').textContent = inv.room;
+    document.getElementById('period-label').textContent = inv.billingPeriod;
+    document.getElementById('room-charge').textContent = D.money(inv.roomCharge);
+    document.getElementById('e-calc').textContent = ' (' + inv.electric.units + ' หน่วย × ' + D.money(inv.electric.rate) + ')';
+    document.getElementById('e-cost').textContent = D.money(inv.electric.cost);
+    document.getElementById('w-calc').textContent = ' (' + inv.water.units + ' หน่วย × ' + D.money(inv.water.rate) + ')';
+    document.getElementById('w-cost').textContent = D.money(inv.water.cost);
+    document.getElementById('utility-subtotal').textContent = D.money(inv.utilitySubtotal);
+
+    // ---- Pre-issue line items ----
+    var baseTotal = inv.roomCharge + inv.utilitySubtotal;
+    inv.extraItems = [];
+
+    function renderItems() {
+      document.getElementById('extra-lines').innerHTML = inv.extraItems.map(function (item, i) {
+        return '<div class="ic-line ic-added' + (item.amount < 0 ? ' ic-minus' : '') + '">' +
+          '<span class="ic-desc">' + item.name +
+            '<button type="button" class="ic-remove" data-remove="' + i + '" title="ลบรายการนี้">✕</button></span>' +
+          '<span class="ic-amt">' + (item.amount < 0 ? '−' : '+') + D.money(Math.abs(item.amount)) + '</span></div>';
+      }).join('');
+      var extraSum = inv.extraItems.reduce(function (s, it) { return s + it.amount; }, 0);
+      inv.total = baseTotal + extraSum;
+      document.getElementById('total').textContent = D.money(inv.total);
+    }
+    renderItems();
+
+    document.getElementById('extra-lines').addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-remove]');
+      if (!btn) return;
+      inv.extraItems.splice(Number(btn.dataset.remove), 1);
+      renderItems();
+    });
+
+    document.getElementById('quick-items').addEventListener('click', function (e) {
+      var btn = e.target.closest('[data-name]');
+      if (!btn) return;
+      document.getElementById('item-name').value = btn.dataset.name;
+      var amt = document.getElementById('item-amount');
+      amt.placeholder = btn.dataset.sign === '-' ? 'เช่น -500 (ส่วนลด)' : 'จำนวนเงิน';
+      amt.focus();
+    });
+
+    function addItem() {
+      var name = document.getElementById('item-name').value.trim();
+      var amount = parseFloat(document.getElementById('item-amount').value);
+      if (!name || isNaN(amount) || amount === 0) {
+        document.getElementById('item-error').style.display = 'block';
+        return;
+      }
+      document.getElementById('item-error').style.display = 'none';
+      inv.extraItems.push({ name: name, amount: amount });
+      document.getElementById('item-name').value = '';
+      document.getElementById('item-amount').value = '';
+      renderItems();
+    }
+    document.getElementById('item-add').addEventListener('click', addItem);
+    document.getElementById('item-amount').addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); addItem(); }
+    });
+
+    document.getElementById('btn-generate').addEventListener('click', function (e) {
+      var btn = e.currentTarget;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> กำลังออกใบแจ้งหนี้…';
+      setTimeout(function () {
+        document.getElementById('action-slot').style.display = 'none';
+        document.getElementById('items-editor').style.display = 'none';
+        // Carry the line items onto the issued invoice so S19 shows the same bill.
+        var issued = D.findInvoice(inv.number);
+        if (issued) {
+          issued.extraItems = inv.extraItems.slice();
+          issued.total = inv.total;
+        }
+        document.getElementById('result-slot').innerHTML =
+          '<div class="success-banner">✓ ออกใบแจ้งหนี้เลขที่ ' + inv.number + ' เรียบร้อยแล้ว</div>' +
+          '<div class="demo-note" style="margin-top:8px;">🔔 แจ้งเตือนผู้เช่าแล้ว — ในแอป + LINE (ตามที่ผู้เช่าเปิดไว้ที่ S38) · กฎ 6.13</div>' +
+          '<div class="demo-note" style="margin-top:8px;">ออกบิลแล้ว — แก้ไขเพิ่มได้ที่หน้าใบแจ้งหนี้ (S19) และจะถูกบันทึกในประวัติแก้ไขบิลที่ผู้เช่าเห็นด้วย</div>' +
+          '<a class="btn btn-primary" style="margin-top:10px;" href="s19-invoice-detail.html?invoice=' + inv.number + qsAmp + '">ดูใบแจ้งหนี้</a>';
+      }, 700);
+    });
+  }
+</script>
+</body>
+</html>

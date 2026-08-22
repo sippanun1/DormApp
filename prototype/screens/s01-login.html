@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S01 · เข้าสู่ระบบ — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+<style>
+  body[data-style] { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--surface); }
+  .login-wrap { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 18px; }
+  .login-brand { display: flex; align-items: center; gap: 10px; justify-content: center; }
+  .login-brand .logo-dot { width: 36px; height: 36px; border-radius: 10px; background: var(--primary); color: var(--primary-contrast); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-family: var(--font-heading); }
+  .login-brand h1 { font-size: 19px; }
+  .login-card { display: flex; flex-direction: column; gap: 14px; }
+  .login-card .screen-id { align-self: flex-end; }
+  .login-card .btn-primary { width: 100%; justify-content: center; }
+  .demo-role-picker { display: flex; gap: 8px; }
+  .demo-role-picker button { flex: 1; }
+</style>
+</head>
+<body data-style="a">
+
+<div class="login-wrap">
+  <div class="login-brand">
+    <span class="logo-dot">A</span>
+    <h1>อมาเนว์ เรสซิเดนซ์</h1>
+  </div>
+
+  <div class="card login-card">
+    <span class="screen-id">S01 · เข้าสู่ระบบ</span>
+    <form id="login-form">
+      <div class="field full" style="margin-bottom:14px;">
+        <label>เบอร์โทรศัพท์ <span class="req">*</span></label>
+        <input type="tel" id="phone" value="081-234-5678" required>
+      </div>
+      <div class="field full" id="pw-field" style="margin-bottom:8px;">
+        <label>รหัสผ่าน <span class="req">*</span></label>
+        <input type="password" id="password" value="1234" required>
+        <div class="error" id="pw-error" style="display:none;">เบอร์โทรศัพท์หรือรหัสผ่านไม่ถูกต้อง</div>
+      </div>
+      <button type="submit" class="btn btn-primary" data-primary>เข้าสู่ระบบ</button>
+    </form>
+  </div>
+
+  <div class="card" style="gap:10px; display:flex; flex-direction:column;">
+    <div class="demo-note">โหมดสาธิต — เลือกบทบาทเพื่อดูสิทธิ์การเข้าถึงที่ต่างกัน (ปกติกำหนดโดยบัญชีผู้ใช้ ไม่ใช่หน้าจอนี้)</div>
+    <div class="demo-role-picker">
+      <button type="button" class="btn btn-primary" data-role-btn="admin">เจ้าของ (Admin)</button>
+      <button type="button" class="btn btn-secondary" data-role-btn="staff">พนักงาน (Staff)</button>
+    </div>
+  </div>
+</div>
+
+<script src="../switcher.js"></script>
+<script src="demo.js"></script>
+<script>
+  var chosenRole = 'admin';
+  document.querySelectorAll('[data-role-btn]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      chosenRole = b.dataset.roleBtn;
+      document.querySelectorAll('[data-role-btn]').forEach(function (x) { x.classList.remove('btn-primary'); x.classList.add('btn-secondary'); });
+      b.classList.remove('btn-secondary'); b.classList.add('btn-primary');
+    });
+  });
+
+  var form = document.getElementById('login-form');
+  Demo.submitWithSpinner(form, function (e, restore) {
+    var pw = document.getElementById('password').value;
+    var errEl = document.getElementById('pw-error');
+    var pwField = document.getElementById('pw-field');
+    if (pw === 'wrong') {
+      errEl.style.display = 'block';
+      pwField.classList.add('invalid');
+      restore();
+      return;
+    }
+    var style = new URLSearchParams(location.search).get('style') || 'a';
+    location.href = 's02-dashboard.html?role=' + chosenRole + '&style=' + style;
+  }, 600);
+</script>
+</body>
+</html>

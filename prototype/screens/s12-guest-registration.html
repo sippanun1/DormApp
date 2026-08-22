@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S12 · ทะเบียนผู้เข้าพัก — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S12" data-title="ทะเบียนผู้เข้าพัก">
+<div class="page-content" id="page-content">
+
+  <div class="wizard-stepper">
+    <div class="wiz-step done"><span class="wiz-num">✓</span> จองห้อง</div>
+    <div class="wiz-connector"></div>
+    <div class="wiz-step current"><span class="wiz-num">2</span> ทะเบียนผู้เข้าพัก</div>
+  </div>
+
+  <div class="card" style="max-width:600px; border: 2px solid var(--danger);">
+    <div class="status-badge badge-danger" style="margin-bottom:8px;">ข้อมูลที่กฎหมายกำหนด ต้องกรอกก่อนเช็คอิน</div>
+    <h3>ทะเบียนผู้เข้าพัก — ห้อง <span id="room-label"></span></h3>
+    <div class="tenant-chip daily" style="margin:10px 0 4px;"><span class="tc-name" id="t-name"></span><span class="tc-phone" id="t-phone"></span></div>
+
+    <form id="guest-form" class="form-grid" style="margin-top:10px;" novalidate>
+      <div class="field full"><div class="section-title">ข้อมูลประจำตัว</div></div>
+
+      <div class="field" id="f-nationality">
+        <label>สัญชาติ <span class="req">*</span></label>
+        <select id="nationality">
+          <option value="ไทย" selected>ไทย</option>
+          <option value="เมียนมา">เมียนมา</option>
+          <option value="ลาว">ลาว</option>
+          <option value="อื่นๆ">อื่นๆ</option>
+        </select>
+        <div class="error" style="display:none;">กรุณาเลือกสัญชาติ</div>
+      </div>
+
+      <div class="field" id="f-idtype">
+        <label>ประเภทเอกสาร <span class="req">*</span></label>
+        <select id="id-type">
+          <option value="">— เลือก —</option>
+          <option value="thai_id">บัตรประชาชน</option>
+          <option value="passport">พาสปอร์ต</option>
+          <option value="driving_license">ใบขับขี่</option>
+        </select>
+        <div class="error" style="display:none;">กรุณาเลือกประเภทเอกสาร</div>
+      </div>
+
+      <div class="field full" id="f-idnumber">
+        <label>เลขที่เอกสาร <span class="req">*</span></label>
+        <input type="text" id="id-number">
+        <div class="error" style="display:none;">กรุณากรอกเลขที่เอกสาร</div>
+      </div>
+
+      <div class="field full"><div class="section-title" style="margin-top:8px;">ที่อยู่</div></div>
+      <div class="field full" id="f-address">
+        <label>ที่อยู่ปัจจุบัน <span class="req">*</span></label>
+        <textarea id="address" rows="3"></textarea>
+        <div class="error" style="display:none;">กรุณากรอกที่อยู่</div>
+      </div>
+
+      <div class="field full" style="flex-direction:row; gap:10px; margin-top:6px;">
+        <button type="submit" class="btn btn-primary" data-primary>ยืนยันเช็คอิน</button>
+        <button type="button" class="btn btn-secondary" id="cancel-btn">ยกเลิก</button>
+      </div>
+      <div class="field full muted" style="font-size:12px;">การยกเลิกจะไม่เช็คอิน — การจองจะยังคงอยู่ในสถานะ "จองแล้ว"</div>
+    </form>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var qs = location.search;
+  var qsAmp = qs.replace(/^\?/, '&');
+  var params = new URLSearchParams(qs);
+  var room = params.get('room') || '103';
+  var name = params.get('name') || '';
+  var phone = params.get('phone') || '';
+
+  document.getElementById('room-label').textContent = room;
+  document.getElementById('t-name').textContent = name;
+  document.getElementById('t-phone').textContent = phone;
+
+  document.getElementById('cancel-btn').addEventListener('click', function () {
+    location.href = 's02-dashboard.html?banner=' + encodeURIComponent('ยกเลิกการลงทะเบียน — ห้อง ' + room + ' ยังอยู่ในสถานะจองแล้ว') + qsAmp;
+  });
+
+  var fields = [
+    { id: 'f-nationality', get: function () { return document.getElementById('nationality').value; } },
+    { id: 'f-idtype', get: function () { return document.getElementById('id-type').value; } },
+    { id: 'f-idnumber', get: function () { return document.getElementById('id-number').value.trim(); } },
+    { id: 'f-address', get: function () { return document.getElementById('address').value.trim(); } }
+  ];
+
+  var form = document.getElementById('guest-form');
+  Demo.guardUnsaved(form);
+  Demo.submitWithSpinner(form, function (e, restore) {
+    var allValid = true;
+    fields.forEach(function (f) {
+      var el = document.getElementById(f.id);
+      var bad = !f.get();
+      el.classList.toggle('invalid', bad);
+      el.querySelector('.error').style.display = bad ? 'block' : 'none';
+      if (bad) allValid = false;
+    });
+    if (!allValid) { restore(); return; }
+    location.href = 's02-dashboard.html?banner=' + encodeURIComponent('เช็คอินห้อง ' + room + ' และลงทะเบียนผู้เข้าพักเรียบร้อยแล้ว') + qsAmp;
+  }, 700);
+</script>
+</body>
+</html>

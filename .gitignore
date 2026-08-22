@@ -1,0 +1,26 @@
+# Secrets — .env.example is the only env file that may be committed
+.env
+.env.*
+!.env.example
+
+# Dependencies / build output
+node_modules/
+.next/
+dist/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# Prisma is pulled from the database — the generated client is never committed
+apps/api/src/generated/
+
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

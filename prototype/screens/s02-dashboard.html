@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S02 · แดชบอร์ด — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S02" data-title="แดชบอร์ด">
+<div class="page-content" id="page-content">
+
+  <div class="card">
+    <h3>ภาพรวมสถานะห้อง</h3>
+    <div class="kpi-row" id="kpi-row"></div>
+  </div>
+
+  <!-- The only lookup box in the system. It used to ride the topbar on every
+       screen, unlabelled, where it read as a filter for whatever page you were on
+       (owner, 2026-08-01). Here it is labelled and it is obvious that it takes
+       you somewhere. -->
+  <div class="card">
+    <h3>ค้นหาห้อง ผู้เช่า หรือบิล</h3>
+    <p class="muted" style="font-size:12px; margin:-4px 0 10px;">พิมพ์แล้วเลือกจากรายการ ระบบจะพาไปที่หน้าห้อง ผู้เช่า หรือใบแจ้งหนี้นั้น</p>
+    <div id="lookup"></div>
+  </div>
+
+  <div class="card">
+    <h3>ทางลัด</h3>
+    <div class="grid-4" style="display:grid; grid-template-columns:repeat(4,1fr); gap:var(--gap);">
+      <!-- Both check-in flows start on the floor plan (S03 picker) — room first,
+           phone second. The old dropdown-of-vacant-rooms path is gone. -->
+      <a class="btn btn-monthly" href="s03-room-grid.html?pick=monthly">+ เช็คอินรายเดือน</a>
+      <a class="btn btn-daily" href="s03-room-grid.html?pick=daily">+ จองห้องรายวัน</a>
+      <a class="btn btn-secondary" href="s13-meter-reading.html">จดมิเตอร์</a>
+      <a class="btn btn-secondary" href="s18-invoice-list.html">ดูใบแจ้งหนี้</a>
+    </div>
+  </div>
+
+  <div class="card" style="gap:14px; display:flex; flex-direction:column;">
+    <div class="page-header-row">
+      <h3 style="margin:0;">ผังห้อง</h3>
+      <div class="spacer"></div>
+      <div class="legend">
+        <span class="legend-item"><span class="swatch" style="background:var(--success-soft); border:1px solid var(--success);"></span> ว่าง</span>
+        <span class="legend-item"><span class="swatch" style="background:var(--info-soft); border:1px solid var(--info);"></span> มีผู้เช่า</span>
+        <span class="legend-item"><span class="swatch" style="background:var(--warning-soft); border:1px dotted var(--warning);"></span> จองแล้ว</span>
+        <span class="legend-item">🛏 ห้องเตียงเดี่ยว</span>
+        <span class="legend-item">🛏🛏 ห้องเตียงคู่</span>
+        <span class="legend-item muted">ทุกห้องเป็นห้องแอร์</span>
+      </div>
+    </div>
+    <div class="tab-bar" id="room-tabs">
+      <button data-tab="all" class="active">ทั้งหมด</button>
+      <button data-tab="monthly">รายเดือน</button>
+      <button data-tab="daily">รายวัน</button>
+    </div>
+    <div id="room-grid-wrap"></div>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  // S02 is the one page that hosts the lookup (see the card above).
+  if (window.AmanewNav) window.AmanewNav.mountSearch(document.getElementById('lookup'));
+</script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+
+  // Room Status Overview
+  var vacantCount = D.rooms.filter(function (r) { return r.state === 'vacant'; }).length;
+  var monthlyCount = D.rooms.filter(function (r) { return r.rentalType === 'monthly' && r.state === 'occupied'; }).length;
+  var dailyCount = D.rooms.filter(function (r) { return r.rentalType === 'daily' && r.state === 'occupied'; }).length;
+  var reservedCount = D.rooms.filter(function (r) { return r.state === 'reserved'; }).length;
+  document.getElementById('kpi-row').innerHTML =
+    '<div class="kpi-tile kpi-success"><div class="kpi-num">' + vacantCount + '</div><div class="kpi-label">ห้องว่าง</div></div>' +
+    '<div class="kpi-tile kpi-primary"><div class="kpi-num">' + monthlyCount + '</div><div class="kpi-label">รายเดือน (มีผู้เช่า)</div></div>' +
+    '<div class="kpi-tile kpi-primary"><div class="kpi-num">' + dailyCount + '</div><div class="kpi-label">รายวัน (มีผู้เข้าพัก)</div></div>' +
+    '<div class="kpi-tile kpi-warning"><div class="kpi-num">' + reservedCount + '</div><div class="kpi-label">จองแล้ว (รอเข้าพัก)</div></div>';
+
+  // Room grid, grouped by floor, all 60 rooms visible
+  function stateClass(r) {
+    if (r.state === 'vacant') return 'state-vacant-clean';
+    if (r.state === 'reserved') return 'state-cleaning';
+    return 'state-occupied';
+  }
+  // Sub-label carries both axes: bed type + รายเดือน/รายวัน rental type. Air
+  // conditioning is not shown — every room has it, so it separates nothing.
+  function subLabel(r) {
+    var icon = D.roomTypeOf(r).icon;
+    if (r.state === 'reserved') return icon + ' จองแล้ว';
+    return icon + ' ' + (r.rentalType === 'monthly' ? 'รายเดือน' : 'รายวัน');
+  }
+
+  var floors = [1, 2, 3, 4];
+  var gridHtml = floors.map(function (f) {
+    var roomsOnFloor = D.rooms.filter(function (r) { return r.floor === f; });
+    var cards = roomsOnFloor.map(function (r) {
+      return '<a class="room-card grid-compact ' + stateClass(r) + '" data-rental="' + r.rentalType + '" ' +
+        'href="s04-room-detail.html?room=' + r.number + qs.replace(/^\?/, '&') + '" title="ห้อง ' + r.number + '">' +
+        r.number + '<span class="room-sub">' + subLabel(r) + '</span></a>';
+    }).join('');
+    return '<div class="floor-label">ชั้น ' + f + '</div><div class="room-mini-grid">' + cards + '</div>';
+  }).join('');
+  document.getElementById('room-grid-wrap').innerHTML = gridHtml;
+
+  Demo.bindTabs(document.getElementById('room-tabs'), function (tab) {
+    document.querySelectorAll('.room-card').forEach(function (card) {
+      var show = tab === 'all' || card.dataset.rental === tab;
+      card.style.display = show ? '' : 'none';
+    });
+  });
+</script>
+</body>
+</html>

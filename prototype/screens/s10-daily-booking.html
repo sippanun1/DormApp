@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S10 · จองห้องรายวัน — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S10" data-title="จองห้องรายวัน">
+<div class="page-content" id="page-content">
+
+  <div class="wizard-stepper">
+    <div class="wiz-step done"><span class="wiz-num">✓</span> เลือกห้อง</div>
+    <div class="wiz-connector"></div>
+    <div class="wiz-step done"><span class="wiz-num">✓</span> ค้นหาผู้เช่า</div>
+    <div class="wiz-connector"></div>
+    <div class="wiz-step current"><span class="wiz-num">3</span> จองห้องรายวัน</div>
+  </div>
+
+  <div class="card" style="max-width:520px;">
+    <h3>จองห้อง <span id="room-label"></span></h3>
+    <div class="tenant-chip daily" style="margin-bottom:14px;"><span class="tc-name" id="t-name"></span><span class="tc-phone" id="t-phone"></span></div>
+    <form id="booking-form" class="form-grid">
+      <div class="field">
+        <label>วันเช็คอิน <span class="req">*</span></label>
+        <input type="date" id="checkin" required>
+      </div>
+      <div class="field">
+        <label>วันเช็คเอาท์ <span class="req">*</span></label>
+        <input type="date" id="checkout" required>
+      </div>
+      <div class="field prefilled">
+        <label>จำนวนคืน (คำนวณอัตโนมัติ)</label>
+        <input type="text" id="nights" disabled>
+      </div>
+      <!-- Rate comes from ตั้งค่าห้อง (S24), by room type — never typed from scratch.
+           Admin can still override it for this one booking, and the override is
+           flagged on the booking (CLAUDE.md rule #7, audit trail visible). -->
+      <div class="field prefilled" id="rate-field">
+        <label>ราคา/คืน (บาท)</label>
+        <input type="number" id="rate" min="0" step="50" required readonly>
+        <div class="hint" id="rate-hint"></div>
+      </div>
+      <div class="field prefilled">
+        <label>ยอดรวมทั้งพัก (คำนวณอัตโนมัติ)</label>
+        <input type="text" id="stay-total" disabled>
+      </div>
+      <div class="field full" style="flex-direction:row; gap:10px; margin-top:6px;">
+        <button type="submit" class="btn btn-primary" data-primary>บันทึกการจอง</button>
+        <a class="btn btn-secondary" href="s02-dashboard.html" id="cancel-link">ยกเลิก</a>
+      </div>
+    </form>
+    <div class="demo-note" style="margin-top:12px;">โหมดสาธิต: กด Shift ค้างไว้ตอนกด "บันทึกการจอง" เพื่อดูสถานการณ์วันที่ซ้อนกัน (S11)</div>
+  </div>
+
+</div>
+
+<!-- Post-booking prompt: is the guest checking in now? -->
+<div class="modal-overlay" id="checkin-now-modal" aria-hidden="true">
+  <div class="modal-box">
+    <h2>แขกมาถึงตอนนี้เลยหรือไม่?</h2>
+    <p class="muted">หากมาถึงแล้ว ต้องกรอกข้อมูลทะเบียนผู้เข้าพักตามกฎหมายก่อนเช็คอิน</p>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="checkin-later">ยังไม่มา (จองไว้ก่อน)</button>
+      <button type="button" class="btn btn-primary" id="checkin-now">ใช่ เช็คอินตอนนี้</button>
+    </div>
+  </div>
+</div>
+
+<!-- S11 — Date-conflict dialog (dual-exit) -->
+<div class="dialog-overlay" id="conflict-dialog" aria-hidden="true">
+  <div class="dialog-box">
+    <span class="screen-id">S11 · วันที่ซ้อนกัน</span>
+    <div class="dialog-reason">บันทึกการจองไม่สำเร็จ</div>
+    <div class="dialog-what">ห้อง <span id="conflict-room"></span> ไม่ว่างในช่วงวันที่ที่เลือก — มีการจองซ้อนกันอยู่</div>
+    <div class="dialog-next">แก้ไขวันที่ใหม่ หรือกลับไปเลือกห้องอื่น</div>
+    <div class="dialog-actions">
+      <a class="btn btn-secondary" href="s02-dashboard.html" id="back-to-dash">กลับไปผังห้อง</a>
+      <button type="button" class="btn btn-primary" id="edit-dates">แก้ไขวันที่</button>
+    </div>
+  </div>
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var qsAmp = qs.replace(/^\?/, '&');
+  var params = new URLSearchParams(qs);
+  var room = params.get('room') || '103';
+  var name = params.get('name') || '';
+  var phone = params.get('phone') || '';
+  var r = D.room(room);
+
+  document.getElementById('room-label').textContent = room;
+  document.getElementById('t-name').textContent = name;
+  document.getElementById('t-phone').textContent = phone;
+  document.getElementById('conflict-room').textContent = room;
+  document.getElementById('cancel-link').href = 's04-room-detail.html?room=' + room + qsAmp;
+
+  var d1 = new Date();
+  var d2 = new Date(); d2.setDate(d2.getDate() + 1);
+  var fmt = D.isoDate;
+  document.getElementById('checkin').value = fmt(d1);
+  document.getElementById('checkout').value = fmt(d2);
+  // Standard price for this room's type, straight from ตั้งค่าห้อง.
+  var roomType = r ? D.roomTypeOf(r) : D.ROOM_TYPES.fan;
+  var standardRate = r ? D.nightlyFor(r) : D.ROOM_TYPES.fan.defaultNightly;
+  var rateInput = document.getElementById('rate');
+  var rateOverridden = false;
+  rateInput.value = standardRate;
+  renderRateHint();
+
+  function renderRateHint() {
+    var role = window.AmanewRole ? window.AmanewRole.current() : 'admin';
+    var base = '<span class="type-chip ' + roomType.key + '">' + roomType.icon + ' ' + roomType.short + '</span> ' +
+      'ราคามาตรฐาน ' + D.money(standardRate) + '/คืน';
+    if (rateOverridden) {
+      document.getElementById('rate-hint').innerHTML = base +
+        ' · <span class="override-note">ปรับราคาเฉพาะการจองนี้ — จะถูกบันทึกในประวัติ</span>' +
+        ' · <a href="#" id="rate-reset">ใช้ราคามาตรฐาน</a>';
+      document.getElementById('rate-reset').addEventListener('click', function (ev) {
+        ev.preventDefault();
+        rateOverridden = false;
+        rateInput.readOnly = true;
+        rateInput.value = standardRate;
+        document.getElementById('rate-field').classList.add('prefilled');
+        renderRateHint();
+        recalcNights();
+      });
+      return;
+    }
+    document.getElementById('rate-hint').innerHTML = base +
+      ' · <a href="s24-room-settings.html' + qs + '">แก้ราคามาตรฐาน</a>' +
+      (role === 'admin' ? ' · <a href="#" id="rate-override">ปรับราคาเฉพาะการจองนี้</a>' : '');
+    var ov = document.getElementById('rate-override');
+    if (ov) ov.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      rateOverridden = true;
+      rateInput.readOnly = false;
+      document.getElementById('rate-field').classList.remove('prefilled');
+      renderRateHint();
+      rateInput.focus();
+      rateInput.select();
+    });
+  }
+
+  function recalcNights() {
+    var ci = new Date(document.getElementById('checkin').value);
+    var co = new Date(document.getElementById('checkout').value);
+    var nights = Math.round((co - ci) / 86400000);
+    nights = nights > 0 ? nights : 0;
+    document.getElementById('nights').value = nights + ' คืน';
+    document.getElementById('stay-total').value =
+      D.money(nights * (Number(rateInput.value) || 0)) + ' (' + nights + ' คืน × ' + D.money(Number(rateInput.value) || 0) + ')';
+    return nights;
+  }
+  recalcNights();
+  document.getElementById('checkin').addEventListener('change', recalcNights);
+  document.getElementById('checkout').addEventListener('change', recalcNights);
+  rateInput.addEventListener('input', recalcNights);
+
+  var shiftHeld = false;
+  var form = document.getElementById('booking-form');
+  form.querySelector('[data-primary]').addEventListener('click', function (e) { shiftHeld = e.shiftKey; }, true);
+  Demo.guardUnsaved(form);
+
+  Demo.submitWithSpinner(form, function (e, restore) {
+    if (shiftHeld) {
+      restore();
+      Demo.openDialog('conflict-dialog', form.querySelector('[data-primary]'));
+      return;
+    }
+    restore();
+    Demo.openDialog('checkin-now-modal', form.querySelector('[data-primary]'));
+  }, 700);
+
+  document.getElementById('edit-dates').addEventListener('click', function () { Demo.closeDialog('conflict-dialog'); });
+
+  document.getElementById('checkin-later').addEventListener('click', function () {
+    location.href = 's02-dashboard.html?banner=' + encodeURIComponent('บันทึกการจองห้อง ' + room + ' แล้ว (สถานะ: จองแล้ว)') + qsAmp;
+  });
+  document.getElementById('checkin-now').addEventListener('click', function () {
+    location.href = 's12-guest-registration.html?room=' + room + '&name=' + encodeURIComponent(name) + '&phone=' + encodeURIComponent(phone) + qsAmp;
+  });
+</script>
+</body>
+</html>

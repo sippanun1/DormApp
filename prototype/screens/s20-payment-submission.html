@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S20 · บันทึกการชำระเงิน — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S20" data-title="บันทึกการชำระเงิน">
+<div class="page-content" id="page-content">
+
+  <div class="card" style="max-width:480px;">
+    <h3>บันทึกการชำระเงิน — ใบแจ้งหนี้ #<span id="inv-number"></span></h3>
+    <form id="payment-form" class="form-grid">
+      <div class="field full">
+        <label>จำนวนเงิน (บาท) <span class="req">*</span></label>
+        <input type="number" id="amount" min="0" step="1" required>
+      </div>
+      <div class="field full">
+        <label>วิธีชำระเงิน <span class="req">*</span></label>
+        <select id="method">
+          <option value="transfer">โอนเงิน</option>
+          <option value="qr">QR พร้อมเพย์</option>
+          <option value="cash">เงินสด</option>
+        </select>
+      </div>
+      <div class="field full" id="f-slip">
+        <label id="slip-label">แนบสลิปโอนเงิน <span class="req">*</span></label>
+        <input type="file" id="slip" accept="image/jpeg,image/png,application/pdf">
+        <div class="hint">รองรับ JPG, PNG, PDF ขนาดไม่เกิน 5MB</div>
+        <div class="error" id="slip-error" style="display:none;">กรุณาแนบสลิปสำหรับการชำระวิธีนี้</div>
+      </div>
+      <div class="field full muted" style="font-size:12px;">ค่าปรับล่าช้าจะถูกล็อกไว้ ณ ขณะที่บันทึกการชำระเงินนี้</div>
+      <div class="field full" style="flex-direction:row; gap:10px; margin-top:6px;">
+        <button type="submit" class="btn btn-primary" data-primary>บันทึกการชำระเงิน</button>
+        <a class="btn btn-secondary" id="cancel-link" href="s18-invoice-list.html">ยกเลิก</a>
+      </div>
+    </form>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var qsAmp = qs.replace(/^\?/, '&');
+  var params = new URLSearchParams(qs);
+  var invNo = params.get('invoice') || '1042';
+  var inv = D.findInvoice(invNo);
+
+  document.getElementById('inv-number').textContent = inv.number;
+  document.getElementById('amount').value = inv.total;
+  document.getElementById('cancel-link').href = 's19-invoice-detail.html?invoice=' + inv.number + qsAmp;
+
+  var methodEl = document.getElementById('method');
+  function updateSlipRequirement() {
+    var required = methodEl.value !== 'cash';
+    document.getElementById('slip-label').innerHTML = (methodEl.value === 'cash' ? 'แนบสลิป (ไม่บังคับ)' : 'แนบสลิปโอนเงิน <span class="req">*</span>');
+    document.getElementById('slip').dataset.required = required ? '1' : '0';
+  }
+  methodEl.addEventListener('change', updateSlipRequirement);
+  updateSlipRequirement();
+
+  var form = document.getElementById('payment-form');
+  Demo.guardUnsaved(form);
+  Demo.submitWithSpinner(form, function (e, restore) {
+    var slipVal = document.getElementById('slip').value;
+    var slipRequired = document.getElementById('slip').dataset.required === '1';
+    var slipField = document.getElementById('f-slip');
+    if (slipRequired && !slipVal) {
+      slipField.classList.add('invalid');
+      document.getElementById('slip-error').style.display = 'block';
+      restore();
+      return;
+    }
+    slipField.classList.remove('invalid');
+    document.getElementById('slip-error').style.display = 'none';
+    location.href = 's19-invoice-detail.html?invoice=' + inv.number + '&justPaid=1' +
+      '&banner=' + encodeURIComponent('บันทึกการชำระเงินแล้ว — รอผู้ดูแลระบบตรวจสอบ') + qsAmp;
+  }, 700);
+</script>
+</body>
+</html>

@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amanew — Clickable Prototype v2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FAF9F6;--surface:#FFFFFF;--ink:#1A1D23;--ink-soft:#5A6070;--ink-faint:#9AA0AE;
+  --line:#E6E4DE;--line-strong:#CFCCC4;
+  --indigo:#2B3A67;--indigo-soft:#EDF0F7;--indigo-hover:#22305A;
+  --green:#2E7D4F;--green-soft:#EAF4EE;
+  --amber:#B87514;--amber-soft:#FBF3E4;
+  --red:#B3372B;--red-soft:#FBEEEC;
+  --focus:#2B3A67;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--paper);color:var(--ink);font-size:14px;line-height:1.5}
+.mono{font-family:'IBM Plex Mono',monospace}
+.nav{display:flex;align-items:center;gap:4px;background:var(--surface);border-bottom:1px solid var(--line);padding:0 28px;height:56px;position:sticky;top:0;z-index:5}
+.nav .brand{font-weight:700;font-size:15px;letter-spacing:.02em;margin-right:28px;color:var(--indigo);cursor:pointer}
+.nav a{display:flex;align-items:center;height:56px;padding:0 16px;color:var(--ink-soft);text-decoration:none;font-weight:500;border-bottom:2px solid transparent;cursor:pointer}
+.nav a.active{color:var(--indigo);border-bottom-color:var(--indigo)}
+.nav a:hover{color:var(--ink)}
+.nav .user{margin-left:auto;font-size:13px;color:var(--ink-faint)}
+.nav .user b{color:var(--ink-soft);font-weight:600}
+.page{max-width:1240px;margin:0 auto;padding:28px}
+.page.narrow{max-width:720px}
+.page.mid{max-width:880px}
+.crumb{font-size:12.5px;color:var(--ink-faint);margin-bottom:20px}
+.crumb b{color:var(--ink-soft);font-weight:500}
+.crumb a{color:var(--indigo);cursor:pointer;text-decoration:none}
+.crumb a:hover{text-decoration:underline}
+h1{font-size:21px;font-weight:700;letter-spacing:-.01em;margin-bottom:4px}
+.sub{color:var(--ink-soft);font-size:13.5px;margin-bottom:24px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:28px}
+label{display:block;font-size:13px;font-weight:500;color:var(--ink-soft);margin-bottom:6px}
+label .opt{font-weight:400;color:var(--ink-faint)}
+input,select{font-family:'IBM Plex Sans',sans-serif;font-size:14.5px;padding:9px 12px;border:1px solid var(--line-strong);border-radius:8px;background:var(--surface);color:var(--ink);width:100%}
+input.mono{font-family:'IBM Plex Mono',monospace}
+input:focus,select:focus{outline:2px solid var(--focus);outline-offset:0;border-color:var(--indigo)}
+input:disabled{background:var(--paper);color:var(--ink-soft)}
+input.err{border-color:var(--red)}
+.field{margin-bottom:18px}
+.field .msg{font-size:12px;color:var(--red);margin-top:5px;display:none}
+.field.invalid .msg{display:block}
+.field.invalid label{color:var(--red)}
+.row{display:flex;gap:16px;align-items:flex-end}
+.row .field{flex:1}
+.ref{font-size:12px;color:var(--ink-faint);margin-bottom:4px;font-family:'IBM Plex Mono',monospace}
+.hintline{font-size:12.5px;color:var(--ink-faint);margin-top:2px}
+.btn{font-family:'IBM Plex Sans',sans-serif;font-size:14px;font-weight:600;padding:10px 20px;border-radius:8px;border:1px solid transparent;cursor:pointer;transition:background .1s ease}
+.btn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.btn.primary{background:var(--indigo);color:#fff}
+.btn.primary:hover{background:var(--indigo-hover)}
+.btn.primary:disabled{background:var(--ink-faint);cursor:default}
+.btn.secondary{background:var(--surface);color:var(--ink-soft);border-color:var(--line-strong)}
+.btn.secondary:hover{background:var(--paper)}
+.btn.danger{background:var(--red);color:#fff}
+.btn.danger:hover{background:#9C2F25}
+.btn.sm{font-size:13px;padding:6px 14px}
+.btn-row{display:flex;gap:12px;margin-top:26px}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-2px;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.spinner{animation-duration:1.5s}}
+.overlay{position:fixed;inset:0;background:rgba(26,29,35,.45);display:none;align-items:center;justify-content:center;z-index:10}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:14px;padding:28px 30px;width:400px;box-shadow:0 8px 32px rgba(26,29,35,.18)}
+.modal .kicker{font-size:12px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px}
+.modal .kicker.danger{color:var(--red)}
+.modal .kicker.success{color:var(--green)}
+.modal h2{font-size:16px;font-weight:600;margin-bottom:4px}
+.modal p{font-size:14px;color:var(--ink-soft);margin-bottom:8px}
+.modal .btn-row{margin-top:22px}
+/* Dashboard */
+.summary{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 20px;min-width:150px}
+.stat .label{font-size:12px;color:var(--ink-soft);display:flex;align-items:center;gap:7px;margin-bottom:2px}
+.stat .value{font-size:24px;font-weight:600;font-family:'IBM Plex Mono',monospace}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.dot.g{background:var(--green)}.dot.i{background:var(--indigo)}.dot.a{background:var(--amber)}.dot.r{border:2px dashed var(--ink-faint);width:7px;height:7px}
+/* Tabs */
+.tabs{display:flex;gap:0;margin-bottom:24px;border-bottom:2px solid var(--line)}
+.tab{padding:10px 22px;font-weight:600;font-size:14px;color:var(--ink-faint);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-2px;background:none;border-top:none;border-left:none;border-right:none;font-family:'IBM Plex Sans',sans-serif}
+.tab.on{color:var(--indigo);border-bottom-color:var(--indigo)}
+.tab .cnt{font-weight:400;color:var(--ink-faint);font-size:12px;margin-left:6px}
+.floor{margin-bottom:26px}
+.floor-label{font-size:12px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(146px,1fr));gap:10px}
+.room{background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--line-strong);border-radius:8px;padding:12px 14px;cursor:pointer;transition:box-shadow .12s ease,transform .12s ease;text-align:left;width:100%;font-family:'IBM Plex Sans',sans-serif}
+.room:hover{box-shadow:0 2px 8px rgba(26,29,35,.08);transform:translateY(-1px)}
+.room .num{font-family:'IBM Plex Mono',monospace;font-weight:600;font-size:16px}
+.room .who{font-size:12.5px;color:var(--ink-soft);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-height:19px}
+.room .tag{font-size:11px;font-weight:600;margin-top:6px;display:inline-block;padding:2px 8px;border-radius:20px}
+.room.vacant{border-left-color:var(--green)}.room.vacant .tag{background:var(--green-soft);color:var(--green)}
+.room.monthly{border-left-color:var(--indigo)}.room.monthly .tag{background:var(--indigo-soft);color:var(--indigo)}
+.room.daily{border-left-color:var(--amber)}.room.daily .tag{background:var(--amber-soft);color:var(--amber)}
+.room.reserved{border-left-style:dashed;border-left-color:var(--ink-faint)}.room.reserved .tag{background:var(--paper);color:var(--ink-soft);border:1px dashed var(--line-strong)}
+.banner{display:flex;align-items:center;gap:10px;background:var(--green-soft);border:1px solid #CBE5D5;color:var(--green);border-radius:8px;padding:10px 16px;margin-bottom:18px;font-weight:500;font-size:13.5px}
+.banner .x{margin-left:auto;background:none;border:none;color:var(--green);cursor:pointer;font-size:16px;padding:2px 6px;border-radius:4px}
+.step-dot{display:flex;gap:6px;margin-bottom:22px}
+.step-dot span{height:4px;border-radius:2px;flex:1;background:var(--line)}
+.step-dot span.on{background:var(--indigo)}
+.tenant-chip{display:flex;align-items:center;gap:12px;border-radius:10px;padding:12px 16px;margin-bottom:22px}
+.tenant-chip.im{background:var(--indigo-soft)}.tenant-chip.im .avatar{background:var(--indigo)}
+.tenant-chip.am{background:var(--amber-soft)}.tenant-chip.am .avatar{background:var(--amber)}
+.tenant-chip .avatar{width:34px;height:34px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:14px}
+.tenant-chip .name{font-weight:600;font-size:14px}
+.tenant-chip .phone{font-size:12.5px;color:var(--ink-soft)}
+.nights{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-family:'IBM Plex Mono',monospace;color:var(--ink-soft);text-align:center}
+.legalbar{display:flex;align-items:center;gap:10px;background:var(--amber-soft);border:1px solid #EAD9B8;border-radius:8px;padding:10px 16px;margin-bottom:22px;font-size:13px;color:var(--amber);font-weight:500}
+.group-title{font-size:12px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.08em;padding-bottom:8px;border-bottom:1px solid var(--line);margin:22px 0 16px}
+.group-title:first-of-type{margin-top:0}
+.money{width:100%;max-width:420px;border-collapse:collapse;font-size:14px}
+.money td{padding:9px 0}.money td:last-child{text-align:right;font-family:'IBM Plex Mono',monospace}
+.money tr.line td{border-top:1px solid var(--line)}.money tr.total td{border-top:2px solid var(--ink);font-weight:600;font-size:15px}.money .dim{color:var(--ink-soft)}
+.table{width:100%;border-collapse:collapse;font-size:13.5px}
+.table th{text-align:left;font-size:12px;font-weight:600;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;padding:8px 12px;border-bottom:1px solid var(--line-strong)}
+.table td{padding:11px 12px;border-bottom:1px solid var(--line)}
+.table td.r,.table th.r{text-align:right}.table td.mono{font-family:'IBM Plex Mono',monospace}
+.table tr.click{cursor:pointer}.table tr.click:hover{background:var(--indigo-soft)}
+.pill{font-size:11.5px;font-weight:600;padding:3px 10px;border-radius:20px;display:inline-block}
+.pill.unpaid{background:var(--red-soft);color:var(--red)}.pill.pending{background:var(--amber-soft);color:var(--amber)}
+.pill.paid{background:var(--green-soft);color:var(--green)}.pill.rejected{background:var(--paper);color:var(--ink-soft);border:1px solid var(--line-strong)}
+.filters{display:flex;gap:8px;margin-bottom:16px}
+.chip{font-size:13px;font-weight:500;padding:6px 14px;border-radius:20px;border:1px solid var(--line-strong);background:var(--surface);color:var(--ink-soft);cursor:pointer;font-family:'IBM Plex Sans',sans-serif}
+.chip.on{background:var(--indigo);border-color:var(--indigo);color:#fff}
+.batch{display:flex;gap:12px;margin-bottom:26px}.bstat{border:1px solid var(--line);border-radius:10px;padding:16px 20px;flex:1;background:var(--surface)}
+.bstat .l{font-size:12.5px;color:var(--ink-soft);margin-bottom:2px}.bstat .v{font-size:26px;font-weight:600;font-family:'IBM Plex Mono',monospace}
+.bstat.ok{border-top:3px solid var(--green)}.bstat.skip{border-top:3px solid var(--ink-faint)}.bstat.warn{border-top:3px solid var(--amber)}
+.verify-grid{display:grid;grid-template-columns:320px 1fr;gap:28px}
+.slip{border:1px solid var(--line-strong);border-radius:12px;background:linear-gradient(160deg,#F2F4F8,#E7EAF1);height:430px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;color:var(--ink-soft)}
+.slip .fake{width:220px;background:var(--surface);border-radius:8px;box-shadow:0 2px 12px rgba(26,29,35,.1);padding:18px;font-size:11px;line-height:1.7}
+.slip .fake .bank{font-weight:700;color:var(--indigo);font-size:12px;margin-bottom:6px}
+.slip .fake .amt{font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:600;margin:6px 0}
+.slip .fake .row2{display:flex;justify-content:space-between;color:var(--ink-soft)}
+.meta{font-size:13.5px}.meta dt{color:var(--ink-faint);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-top:14px}
+.meta dt:first-child{margin-top:0}.meta dd{margin:2px 0 0}.meta dd.mono{font-family:'IBM Plex Mono',monospace}
+.match{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--green);background:var(--green-soft);border-radius:20px;padding:3px 10px;margin-left:8px}
+.wait{font-size:12px;font-weight:600;padding:3px 10px;border-radius:20px;display:inline-block}
+.wait.old{background:var(--red-soft);color:var(--red)}.wait.new{background:var(--paper);color:var(--ink-soft);border:1px solid var(--line)}
+.upload{border:1.5px dashed var(--line-strong);border-radius:10px;padding:26px;text-align:center;color:var(--ink-faint);font-size:13.5px;cursor:pointer;transition:border-color .1s}
+.upload:hover{border-color:var(--indigo)}.upload.filled{border-style:solid;border-color:var(--green);background:var(--green-soft);color:var(--green);font-weight:500}
+.kv{display:grid;grid-template-columns:160px 1fr;gap:8px 16px;font-size:13.5px;margin:16px 0 6px}
+.kv dt{color:var(--ink-faint)}.kv dd{font-weight:500}.kv dd.mono{font-family:'IBM Plex Mono',monospace}
+.detail-head{display:flex;align-items:center;gap:16px;margin-bottom:8px}
+.detail-head .big{font-family:'IBM Plex Mono',monospace;font-size:32px;font-weight:600}
+/* LINE mock */
+.line-mock{background:#06C755;color:#fff;border-radius:10px;padding:14px 18px;font-size:13px;max-width:300px;margin-top:12px;line-height:1.6}
+.line-mock .from{font-weight:600;font-size:12px;opacity:.8;margin-bottom:4px}
+.screen{display:none}.screen.on{display:block}
+@media(max-width:720px){.verify-grid{grid-template-columns:1fr}.summary{flex-wrap:wrap}.stat{min-width:calc(50% - 6px)}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <span class="brand" onclick="go('dash')">AMANEW</span>
+  <a id="nav-dash" class="active" onclick="go('dash')">Dashboard</a>
+  <a id="nav-inv" onclick="go('invoices')">Invoices</a>
+  <a id="nav-ver" onclick="go('verify')">Verify payments</a>
+  <a id="nav-set" onclick="go('settings')">Room settings</a>
+  <span class="user">Signed in as <b>Admin</b></span>
+</nav>
+<div id="app"></div>
+<div class="overlay" id="modalHost"></div>
+<script>
+/* ═══════════ DATA ═══════════ */
+const N=["Malee Srisuk","Prasit Boonmee","Anong Kaewta","Chai Thongdee","Kanya Phromma","Wichai Saelim","Duangjai Nilsson","Somsak Klahan","Pornthip Ruang","Thana Wongsa"];
+const rooms=[];let nn=0;
+[1,2,3,4].forEach(f=>{for(let i=1;i<=15;i++){
+  const num=f*100+i,k=(f*7+i*3)%10;let r={num,floor:f,isDaily:false};
+  if(num===102){r.status="vacant";r.tag="Vacant";r.isDaily=false;}
+  else if(num===103){r.status="vacant";r.tag="Vacant";r.isDaily=true;}
+  else if(num===104){r.status="daily";r.who="Nok Suwan";r.tag="Out 10 Jul";r.isDaily=true;}
+  else if(num===105){r.status="monthly";r.who="Somchai Jaidee";r.tag="Monthly";r.isDaily=false;}
+  else if(k<=4){r.status="monthly";r.who=N[nn++%10];r.tag="Monthly";r.isDaily=false;}
+  else if(k<=6){r.status="vacant";r.isDaily=(i%3===0);r.tag="Vacant";}
+  else if(k===7){r.status="daily";r.who=N[nn++%10];r.tag="Out "+(9+i%5)+" Jul";r.isDaily=true;}
+  else if(k===8){r.status="reserved";r.who=N[nn++%10];r.tag="In "+(10+i%4)+" Jul";r.isDaily=true;}
+  else{r.status="vacant";r.tag="Vacant";r.isDaily=false;}
+  rooms.push(r);
+}});
+const KP="081-234-5678";
+let S={banner:null,ciRoom:null,guest:null,newPh:null,dashTab:'monthly'};
+
+/* ═══════════ ROUTER ═══════════ */
+const app=document.getElementById('app');
+function go(v,a){
+  document.querySelectorAll('.nav a').forEach(x=>x.classList.remove('active'));
+  const m={dash:'nav-dash',roomDetail:'nav-dash',checkin:'nav-dash',newTenant:'nav-dash',tenancy:'nav-dash',booking:'nav-dash',register:'nav-dash',endTenancy:'nav-dash',meters:'nav-dash',invoices:'nav-inv',invDetail:'nav-inv',genConfirm:'nav-inv',batch:'nav-inv',pay:'nav-inv',verify:'nav-ver',verDetail:'nav-ver',settings:'nav-set'};
+  const el=document.getElementById(m[v]||'nav-dash');if(el)el.classList.add('active');
+  app.innerHTML=V[v](a);window.scrollTo(0,0);
+}
+function modal(h){const x=document.getElementById('modalHost');x.innerHTML=h;x.classList.add('open');const f=x.querySelector('input')||x.querySelector('.btn.primary');if(f)f.focus();}
+function closeModal(){const x=document.getElementById('modalHost');x.classList.remove('open');x.innerHTML='';}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+function busy(b,l,fn,ms=650){b.disabled=true;const t=b.textContent;b.innerHTML='<span class="spinner"></span>'+l;setTimeout(()=>{b.disabled=false;b.textContent=t;fn();},ms);}
+const V={};
+
+/* ═══════════ DASHBOARD ═══════════ */
+V.dash=()=>{
+  const c={vacant:0,monthly:0,daily:0,reserved:0};rooms.forEach(r=>c[r.status]++);
+  const ban=S.banner?`<div class="banner">✓&nbsp; ${S.banner}<button class="x" onclick="S.banner=null;go('dash')">×</button></div>`:'';
+  const monthlyRooms=rooms.filter(r=>!r.isDaily), dailyRooms=rooms.filter(r=>r.isDaily);
+  const mCnt=monthlyRooms.length, dCnt=dailyRooms.length;
+  function renderGrid(list){
+    let out='';
+    [1,2,3,4].forEach(f=>{
+      const fl=list.filter(r=>r.floor===f);
+      if(!fl.length)return;
+      out+=`<section class="floor"><div class="floor-label">Floor ${f}</div><div class="grid">`+
+        fl.map(r=>`<button class="room ${r.status}" onclick="go('roomDetail',${r.num})">
+          <div class="num">${r.num}</div><div class="who">${r.who||'&nbsp;'}</div><span class="tag">${r.tag}</span></button>`).join('')+
+        `</div></section>`;
+    });
+    return out;
+  }
+  return `<main class="page">${ban}
+    <div style="display:flex;align-items:baseline;gap:16px;margin-bottom:20px"><h1>Room Dashboard</h1><span style="color:var(--ink-faint);font-size:13px">Wednesday 8 Jul 2026</span></div>
+    <div class="summary">
+      <div class="stat"><div class="label"><span class="dot g"></span>Vacant</div><div class="value">${c.vacant}</div></div>
+      <div class="stat"><div class="label"><span class="dot i"></span>Monthly</div><div class="value">${c.monthly}</div></div>
+      <div class="stat"><div class="label"><span class="dot a"></span>Daily</div><div class="value">${c.daily}</div></div>
+      <div class="stat"><div class="label"><span class="dot r"></span>Reserved</div><div class="value">${c.reserved}</div></div>
+    </div>
+    <div class="tabs">
+      <button class="tab ${S.dashTab==='monthly'?'on':''}" onclick="S.dashTab='monthly';go('dash')">Monthly rooms<span class="cnt">(${mCnt})</span></button>
+      <button class="tab ${S.dashTab==='daily'?'on':''}" onclick="S.dashTab='daily';go('dash')">Daily rooms<span class="cnt">(${dCnt})</span></button>
+      <button class="tab ${S.dashTab==='all'?'on':''}" onclick="S.dashTab='all';go('dash')">All rooms<span class="cnt">(${mCnt+dCnt})</span></button>
+    </div>
+    ${S.dashTab==='monthly'?renderGrid(monthlyRooms):S.dashTab==='daily'?renderGrid(dailyRooms):renderGrid(rooms)}
+  </main>`;
+};
+
+/* ═══════════ ROOM DETAIL ═══════════ */
+V.roomDetail=(num)=>{
+  const r=rooms.find(x=>x.num===num);if(!r)return`<main class="page narrow"><p>Room not found</p></main>`;
+  let info='',actions='',typeLabel=r.isDaily?'Daily':'Monthly';
+  if(r.status==='vacant'&&!r.isDaily){
+    info=`<dl class="kv"><dt>Type</dt><dd>Monthly</dd><dt>Status</dt><dd style="color:var(--green);font-weight:600">Vacant — ready for check-in</dd></dl>`;
+    actions=`<button class="btn primary" onclick="S.ciRoom=${num};go('checkin')">Check in tenant</button>
+             <button class="btn secondary" onclick="go('dash')">Back to dashboard</button>`;
+  } else if(r.status==='vacant'&&r.isDaily){
+    info=`<dl class="kv"><dt>Type</dt><dd>Daily</dd><dt>Status</dt><dd style="color:var(--green);font-weight:600">Vacant — ready for booking</dd><dt>Nightly rate</dt><dd class="mono">900.00 THB</dd></dl>`;
+    actions=`<button class="btn primary" onclick="S.ciRoom=${num};go('checkin')">New booking</button>
+             <button class="btn secondary" onclick="go('dash')">Back to dashboard</button>`;
+  } else if(r.status==='monthly'){
+    info=`<dl class="kv"><dt>Type</dt><dd>Monthly</dd><dt>Tenant</dt><dd>${r.who}</dd><dt>Phone</dt><dd class="mono">${r.num===105?KP:'08X-XXX-XXXX'}</dd><dt>Since</dt><dd>${r.num===105?'1 Apr 2026':'earlier'}</dd><dt>Deposit</dt><dd class="mono">5,000.00 THB</dd></dl>`;
+    actions=`<button class="btn primary" onclick="go('meters',${num})">Enter meter readings</button>
+             <button class="btn secondary" onclick="go('invoices')">View invoices</button>
+             <button class="btn danger" onclick="go('endTenancy',${num})">End tenancy</button>`;
+  } else if(r.status==='daily'){
+    info=`<dl class="kv"><dt>Type</dt><dd>Daily</dd><dt>Guest</dt><dd>${r.who}</dd><dt>Stay</dt><dd>8–10 Jul 2026</dd><dt>Nightly rate</dt><dd class="mono">900.00 THB</dd></dl>`;
+    actions=`<button class="btn primary" onclick="doCheckout(${num})">Check out</button>
+             <button class="btn secondary" onclick="go('dash')">Back</button>`;
+  } else {
+    info=`<dl class="kv"><dt>Type</dt><dd>Daily</dd><dt>Reserved for</dt><dd>${r.who}</dd><dt>Arriving</dt><dd>${(r.tag.match(/\d+/)||['soon'])[0]} Jul 2026</dd></dl>`;
+    actions=`<button class="btn primary" onclick="S.ciRoom=${num};S.guest={name:'${r.who}',phone:'08X-XXX-XXXX'};go('register')">Guest has arrived — check in</button>
+             <button class="btn secondary" onclick="doCancel(${num})">Cancel booking</button>
+             <button class="btn secondary" onclick="doNoShow(${num})">No-show</button>`;
+  }
+  return `<main class="page narrow">
+    <div class="crumb"><a onclick="go('dash')">Dashboard</a> &rsaquo; <b>Room ${num}</b></div>
+    <div class="detail-head"><span class="big">${num}</span><span class="pill ${r.status==='vacant'?'paid':r.status==='monthly'?'pending':'unpaid'}" style="background:${r.status==='vacant'?'var(--green-soft)':r.status==='monthly'?'var(--indigo-soft)':'var(--amber-soft)'};color:${r.status==='vacant'?'var(--green)':r.status==='monthly'?'var(--indigo)':'var(--amber)'}">${typeLabel} · ${r.tag}</span></div>
+    <div class="card" style="margin-top:16px">${info}<div class="btn-row" style="flex-wrap:wrap">${actions}</div></div></main>`;
+};
+function doCheckout(num){const r=rooms.find(x=>x.num===num);
+  modal(`<div class="modal"><div class="kicker">Confirm check-out</div><h2>Check out Room ${num}?</h2><p>${r.who} · Daily booking ends.</p>
+    <div class="btn-row"><button class="btn primary" onclick="closeModal();rooms.find(x=>x.num===${num}).status='vacant';rooms.find(x=>x.num===${num}).who='';rooms.find(x=>x.num===${num}).tag='Vacant';S.banner='Guest checked out — Room ${num}';go('dash')">Confirm check-out</button>
+    <button class="btn secondary" onclick="closeModal()">Cancel</button></div></div>`);}
+function doCancel(num){const r=rooms.find(x=>x.num===num);
+  modal(`<div class="modal"><div class="kicker">Cancel booking</div><h2>Cancel reservation for Room ${num}?</h2><p>${r.who}'s booking will be cancelled. The room becomes available.</p>
+    <div class="btn-row"><button class="btn primary" onclick="closeModal();rooms.find(x=>x.num===${num}).status='vacant';rooms.find(x=>x.num===${num}).who='';rooms.find(x=>x.num===${num}).tag='Vacant';S.banner='Booking cancelled — Room ${num}';go('dash')">Confirm cancel</button>
+    <button class="btn secondary" onclick="closeModal()">Keep booking</button></div></div>`);}
+function doNoShow(num){const r=rooms.find(x=>x.num===num);
+  modal(`<div class="modal"><div class="kicker">No-show</div><h2>Mark Room ${num} as no-show?</h2><p>${r.who} did not arrive. The room becomes available again.</p>
+    <div class="btn-row"><button class="btn primary" onclick="closeModal();rooms.find(x=>x.num===${num}).status='vacant';rooms.find(x=>x.num===${num}).who='';rooms.find(x=>x.num===${num}).tag='Vacant';S.banner='No-show recorded — Room ${num}';go('dash')">Confirm no-show</button>
+    <button class="btn secondary" onclick="closeModal()">Cancel</button></div></div>`);}
+/* ═══════════ END TENANCY ═══════════ */
+V.endTenancy=(num)=>{
+  const r=rooms.find(x=>x.num===num);
+  return `<main class="page narrow">
+    <div class="crumb"><a onclick="go('dash')">Dashboard</a> &rsaquo; <a onclick="go('roomDetail',${num})">Room ${num}</a> &rsaquo; <b>End tenancy</b></div>
+    <h1>End tenancy — Room ${num}</h1>
+    <p class="sub">${r.who} · Move-out</p>
+    <div class="card">
+      <div class="field" style="max-width:220px"><label>End date</label><input type="date" value="2026-07-08"></div>
+      <p class="hintline">The deposit refund/deduction workflow is not available in Phase 1. The tenancy record will be marked as ended.</p>
+      <div class="btn-row">
+        <button class="btn danger" onclick="busy(this,'Ending tenancy',()=>{rooms.find(x=>x.num===${num}).status='vacant';rooms.find(x=>x.num===${num}).who='';rooms.find(x=>x.num===${num}).tag='Vacant';S.banner='Tenancy ended — Room ${num}';go('dash');})">End tenancy</button>
+        <button class="btn secondary" onclick="go('roomDetail',${num})">Cancel</button></div></div></main>`;
+};
+
+/* ═══════════ CHECKIN LOOKUP ═══════════ */
+V.checkin=()=>{
+  const num=S.ciRoom,r=rooms.find(x=>x.num===num),daily=r.isDaily;
+  return `<main class="page narrow">
+    <div class="crumb"><a onclick="go('dash')">Dashboard</a> &rsaquo; <a onclick="go('roomDetail',${num})">Room ${num}</a> &rsaquo; <b>${daily?'New booking':'Check-in'} — Step 1 of 2</b></div>
+    <h1>Who is ${daily?'booking':'checking in'}?</h1>
+    <p class="sub">Enter phone number. Try <span class="mono">081-234-5678</span> for a returning tenant, or any other number for someone new.</p>
+    <div class="card">
+      <div class="step-dot"><span class="on"></span><span></span></div>
+      <div class="field"><label>Phone number</label><input id="phone" class="mono" placeholder="08X-XXX-XXXX" style="max-width:260px">
+        <p class="hintline">New ${daily?'guests':'tenants'} can be registered if no match is found.</p></div>
+      <div class="btn-row"><button class="btn primary" onclick="lookupPh(this)">Look up</button>
+        <button class="btn secondary" onclick="go('roomDetail',${S.ciRoom})">Cancel</button></div></div></main>`;
+};
+function lookupPh(btn){
+  const v=document.getElementById('phone').value.trim();if(!v){document.getElementById('phone').focus();return;}
+  const r=rooms.find(x=>x.num===S.ciRoom),daily=r.isDaily;
+  busy(btn,'Looking up',()=>{
+    if(v===KP){
+      modal(`<div class="modal"><div class="kicker">Match found</div><h2>Somchai Jaidee</h2><p class="mono" style="font-size:13px">081-234-5678</p>
+        <p style="margin-top:10px">Stayed before · Room 205, ended Mar 2026</p>
+        <div class="btn-row"><button class="btn primary" onclick="closeModal();S.guest={name:'Somchai Jaidee',phone:'081-234-5678'};go('${daily?'booking':'tenancy'}')">Yes, this is them</button>
+        <button class="btn secondary" onclick="closeModal()">Not them, search again</button></div></div>`);
+    } else { S.newPh=v;go('newTenant'); }
+  });
+}
+
+/* ═══════════ S07 NEW TENANT ═══════════ */
+V.newTenant=()=>{
+  const num=S.ciRoom,r=rooms.find(x=>x.num===num),daily=r.isDaily;
+  return `<main class="page narrow">
+    <div class="crumb"><a onclick="go('dash')">Dashboard</a> &rsaquo; <a onclick="go('roomDetail',${num})">Room ${num}</a> &rsaquo; <b>${daily?'New booking':'Check-in'} — Step 1 of 2</b></div>
+    <h1>New ${daily?'guest':'tenant'} — no match found</h1>
+    <p class="sub">No one with <span class="mono">${S.newPh}</span> has stayed before.</p>
+    <div class="card">
+      <div class="step-dot"><span class="on"></span><span></span></div>
+      <div class="field" id="f-nm" style="max-width:340px"><label>Full name</label><input id="tname" placeholder="Full name"><p class="msg">Name is required</p></div>
+      <div class="field" style="max-width:340px"><label>Phone number</label><input class="mono" value="${S.newPh}" disabled></div>
+      <div class="field" style="max-width:340px"><label>Date of birth <span class="opt">(optional)</span></label><input type="date"></div>
+      <div class="field" style="max-width:340px"><label>National ID <span class="opt">(optional)</span></label><input class="mono" placeholder="Optional"></div>
+      <div class="field" style="max-width:340px"><label>Guardian name <span class="opt">(optional)</span></label><input placeholder="Optional — for students"></div>
+      <div class="field" style="max-width:340px"><label>Guardian phone <span class="opt">(optional)</span></label><input class="mono" placeholder="Optional"></div>
+      <div class="btn-row"><button class="btn primary" onclick="saveNew(this)">Save and continue</button>
+        <button class="btn secondary" onclick="go('checkin')">Back</button></div></div></main>`;
+};
+function saveNew(btn){const n=document.getElementById('tname'),f=document.getElementById('f-nm');
+  f.classList.remove('invalid');n.classList.remove('err');
+  if(!n.value.trim()){f.classList.add('invalid');n.classList.add('err');n.focus();return;}
+  const r=rooms.find(x=>x.num===S.ciRoom),daily=r.isDaily;
+  busy(btn,'Saving',()=>{S.guest={name:n.value.trim(),phone:S.newPh};go(daily?'booking':'tenancy');});}
+
+/* ═══════════ S08 MONTHLY TENANCY ═══════════ */
+V.tenancy=()=>{
+  const g=S.guest,num=S.ciRoom,ini=g.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  return `<main class="page narrow">
+    <div class="crumb"><a onclick="go('dash')">Dashboard</a> &rsaquo; <a onclick="go('roomDetail',${num})">Room ${num}</a> &rsaquo; <b>Check-in — Step 2 of 2</b></div>
+    <h1>Monthly tenancy — Room ${num}</h1>
+    <p class="sub">Confirm start date and deposit to complete check-in.</p>
+    <div class="card">
+      <div class="step-dot"><span class="on"></span><span class="on"></span></div>
+      <div class="tenant-chip im"><div class="avatar">${ini}</div><div><div class="name">${g.name}</div><div class="phone mono">${g.phone}</div></div></div>
+      <div class="field" style="max-width:220px"><label>Start date</label><input type="date" value="2026-07-08"></div>
+      <div class="field" style="max-width:220px"><label>Security deposit (THB)</label><input class="mono" value="5000.00"></div>
+      <div class="btn-row"><button class="btn primary" onclick="confirmTenancy(this)">Confirm check-in</button>
+        <button class="btn secondary" onclick="go('checkin')">Back</button></div>
+      <p class="hintline" style="margin-top:14px">Hold Shift while confirming to see the room-conflict protection.</p></div></main>`;
+};
+function confirmTenancy(btn){const conflict=window.event&&window.event.shiftKey;
+  busy(btn,'Checking in',()=>{
+    if(conflict){modal(`<div class="modal"><div class="kicker danger">Check-in failed</div><h2>Room ${S.ciRoom} was just taken</h2><p>Another check-in claimed this room a moment ago. Choose a different room.</p>
+      <div class="btn-row"><button class="btn primary" onclick="closeModal();go('dash')">Back to dashboard</button></div></div>`);
+    } else {const r=rooms.find(x=>x.num===S.ciRoom);r.status='monthly';r.who=S.guest.name;r.tag='Monthly';r.isDaily=false;
+      S.banner=`Tenant checked in — Room ${S.ciRoom}`;go('dash');}});}
+
+/* ═══════════ S10 DAILY BOOKING ═══════════ */
+V.booking=()=>{
+  const g=S.guest,num=S.ciRoom,ini=g.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  return `<main class="page narrow">
+    <div class="crumb"><a onclick="go('dash')">Dashboard</a> &rsaquo; <a onclick="go('roomDetail',${num})">Room ${num}</a> &rsaquo; <b>New booking</b></div>
+    <h1>Daily booking — Room ${num}</h1>
+    <div class="card" style="margin-top:20px">
+      <div class="tenant-chip am"><div class="avatar">${ini}</div><div><div class="name">${g.name}</div><div class="phone mono">${g.phone}</div></div></div>
+      <div class="row"><div class="field"><label>Check-in date</label><input id="bin" type="date" value="2026-07-08" onchange="bN()"></div>
+        <div class="field"><label>Check-out date</label><input id="bout" type="date" value="2026-07-10" onchange="bN()"></div>
+        <div class="field" style="max-width:110px"><label>Total nights</label><div class="nights" id="bn">2</div></div></div>
+      <div class="field" style="max-width:200px"><label>Nightly rate (THB)</label><input class="mono" value="900.00"></div>
+      <div class="btn-row"><button class="btn primary" onclick="saveBook(this)">Save booking</button>
+        <button class="btn secondary" onclick="go('roomDetail',${num})">Cancel</button></div>
+      <p class="hintline" style="margin-top:14px">Hold Shift while saving to see the date-conflict protection.</p></div></main>`;
+};
+function bN(){const a=new Date(document.getElementById('bin').value),b=new Date(document.getElementById('bout').value);
+  const n=Math.round((b-a)/86400000);document.getElementById('bn').textContent=(isNaN(n)||n<1)?'—':n;}
+function saveBook(btn){const conflict=window.event&&window.event.shiftKey;
+  busy(btn,'Saving',()=>{
+    if(conflict){modal(`<div class="modal"><div class="kicker danger">Booking failed</div><h2>Room ${S.ciRoom} isn't available for those dates</h2><p>Another booking already covers part of that range.</p>
+      <div class="btn-row"><button class="btn primary" onclick="closeModal()">Edit dates</button><button class="btn secondary" onclick="closeModal();go('dash')">Back to dashboard</button></div></div>`);
+    } else {modal(`<div class="modal"><div class="kicker success">Booking saved</div><h2>Is the guest checking in now?</h2><p>Check-in requires guest registration (Hotel Act). If arriving later, the room stays reserved.</p>
+      <div class="btn-row"><button class="btn primary" onclick="closeModal();go('register')">Yes, check in now</button>
+      <button class="btn secondary" onclick="closeModal();bookLater()">Later</button></div></div>`);}});}
+function bookLater(){const r=rooms.find(x=>x.num===S.ciRoom);r.status='reserved';r.who=S.guest.name;r.tag='In 8 Jul';
+  S.banner=`Booking saved — Room ${S.ciRoom} reserved for ${S.guest.name}`;go('dash');}
+
+/* ═══════════ S12 GUEST REGISTRATION ═══════════ */
+V.register=()=>{
+  const g=S.guest,num=S.ciRoom;
+  return `<main class="page narrow">
+    <div class="crumb"><a onclick="go('dash')">Dashboard</a> &rsaquo; <b>Room ${num} — guest registration</b></div>
+    <h1>Guest registration</h1><p class="sub">${g.name} · Room ${num} · 8–10 Jul 2026</p>
+    <div class="card">
+      <div class="legalbar">⚖&nbsp; All fields required by the Thai Hotel Act before check-in can complete.</div>
+      <div class="group-title">Identity</div>
+      <div class="row"><div class="field"><label>Nationality</label><input id="rnat" value="Thai"></div>
+        <div class="field"><label>ID type</label><select><option>Thai national ID</option><option>Passport</option><option>Driving license</option></select></div></div>
+      <div class="field" id="f-rid" style="max-width:300px"><label>ID number</label><input id="rid" class="mono" placeholder="X-XXXX-XXXXX-XX-X"><p class="msg">ID number is required</p></div>
+      <div class="group-title">Residence</div>
+      <div class="field" id="f-raddr"><label>Address</label><input id="raddr" placeholder="House number, street, district, province"><p class="msg">Address is required</p></div>
+      <div class="btn-row"><button class="btn primary" onclick="doReg(this)">Save and check in</button>
+        <button class="btn secondary" onclick="modal('<div class=modal><div class=kicker>Registration not completed</div><h2>The booking stays reserved</h2><p>Registration must be completed when the guest arrives — there is no way to check in without it.</p><div class=btn-row><button class=\\'btn primary\\' onclick=\\'closeModal();bookLater()\\'>OK</button></div></div>')">Cancel</button></div></div></main>`;
+};
+function doReg(btn){let ok=true;
+  const id=document.getElementById('rid'),fi=document.getElementById('f-rid'),ad=document.getElementById('raddr'),fa=document.getElementById('f-raddr');
+  fi.classList.remove('invalid');id.classList.remove('err');fa.classList.remove('invalid');ad.classList.remove('err');
+  if(!id.value.trim()){fi.classList.add('invalid');id.classList.add('err');ok=false;}
+  if(!ad.value.trim()){fa.classList.add('invalid');ad.classList.add('err');ok=false;}
+  if(!ok){(id.value.trim()?ad:id).focus();return;}
+  busy(btn,'Checking in',()=>{const r=rooms.find(x=>x.num===S.ciRoom);r.status='daily';r.who=S.guest.name;r.tag='Out 10 Jul';r.isDaily=true;
+    S.banner=`Guest checked in — Room ${S.ciRoom}`;go('dash');});}
+/* ═══════════ METERS ═══════════ */
+V.meters=(num)=>{
+  const r=rooms.find(x=>x.num===num);
+  return `<main class="page mid">
+    <div class="crumb"><a onclick="go('dash')">Dashboard</a> &rsaquo; <a onclick="go('roomDetail',${num})">Room ${num}</a> &rsaquo; <b>Meter readings</b></div>
+    <h1>Meter readings — Room ${num}</h1><p class="sub">${r.who||''} · July 2026</p>
+    <div class="card" style="max-width:640px">
+      <div class="group-title">Electric</div>
+      <div class="row"><div class="field"><p class="ref">Previous: 2458</p><label>Current reading</label><input id="ecur" class="mono" oninput="mU()" placeholder="e.g. 2510"></div>
+        <div class="field" style="max-width:150px"><label>Rate (THB/unit)</label><input id="erate" class="mono" value="7.50" oninput="mU()"></div>
+        <div class="field" style="max-width:160px"><label>Usage · cost</label><div class="ref" style="border:1px solid var(--line);border-radius:8px;padding:9px 12px;margin:0" id="eout">— · —</div></div></div>
+      <div class="group-title">Water</div>
+      <div class="row"><div class="field"><p class="ref">Previous: 119</p><label>Current reading</label><input id="wcur" class="mono" oninput="mU()" placeholder="e.g. 124"></div>
+        <div class="field" style="max-width:150px"><label>Rate (THB/unit)</label><input id="wrate" class="mono" value="18.00" oninput="mU()"></div>
+        <div class="field" style="max-width:160px"><label>Usage · cost</label><div class="ref" style="border:1px solid var(--line);border-radius:8px;padding:9px 12px;margin:0" id="wout">— · —</div></div></div>
+      <p class="hintline">Leave a section blank if that meter wasn't read today. Both are needed before an invoice can be generated.</p>
+      <div class="btn-row"><button class="btn primary" onclick="busy(this,'Saving',()=>go('genConfirm',${num}))">Save readings</button>
+        <button class="btn secondary" onclick="go('roomDetail',${num})">Cancel</button></div></div></main>`;
+};
+function mU(){
+  const e=parseFloat(document.getElementById('ecur').value),er=parseFloat(document.getElementById('erate').value);
+  const w=parseFloat(document.getElementById('wcur').value),wr=parseFloat(document.getElementById('wrate').value);
+  document.getElementById('eout').textContent=(!isNaN(e)&&e>=2458&&!isNaN(er))?`${(e-2458).toFixed(0)} · ${((e-2458)*er).toFixed(2)}`:'— · —';
+  document.getElementById('wout').textContent=(!isNaN(w)&&w>=119&&!isNaN(wr))?`${(w-119).toFixed(0)} · ${((w-119)*wr).toFixed(2)}`:'— · —';
+}
+
+/* ═══════════ INVOICES ═══════════ */
+V.genConfirm=(num)=>`<main class="page narrow">
+  <div class="crumb"><a onclick="go('invoices')">Invoices</a> &rsaquo; Generate &rsaquo; <b>Room ${num||105}</b></div>
+  <h1>Confirm invoice — Room ${num||105}, July 2026</h1><p class="sub">Somchai Jaidee · Nothing saved until confirmed.</p>
+  <div class="card" style="max-width:560px"><table class="money">
+    <tr><td class="dim">Room charge</td><td>4,500.00</td></tr>
+    <tr><td class="dim">Electric — 52 units × 7.50</td><td>390.00</td></tr>
+    <tr><td class="dim">Water — 5 units × 18.00</td><td>90.00</td></tr>
+    <tr class="line"><td class="dim">Utility subtotal</td><td>480.00</td></tr>
+    <tr class="total"><td>Total (THB)</td><td>4,980.00</td></tr></table>
+    <p class="hintline" style="margin-top:14px">Due 5 Aug 2026 · Invoice number assigned on confirm.</p>
+    <div class="btn-row"><button class="btn primary" onclick="busy(this,'Generating',()=>go('invDetail'))">Generate invoice</button>
+      <button class="btn secondary" onclick="go('invoices')">Cancel</button></div></div></main>`;
+
+V.batch=()=>`<main class="page mid">
+  <div class="crumb"><a onclick="go('invoices')">Invoices</a> &rsaquo; Generate all &rsaquo; <b>Result</b></div>
+  <h1>Batch generation — July 2026</h1><p class="sub">Safe to re-run anytime.</p>
+  <div class="batch"><div class="bstat ok"><div class="l">Generated</div><div class="v">41</div></div>
+    <div class="bstat skip"><div class="l">Already generated</div><div class="v">2</div></div>
+    <div class="bstat warn"><div class="l">Incomplete</div><div class="v">3</div></div></div>
+  <div class="card"><div class="group-title">Incomplete — missing readings</div>
+    <table class="table"><tr><th>Room</th><th>Missing</th><th></th></tr>
+      <tr><td class="mono">108</td><td>Water reading</td><td class="r"><button class="btn secondary sm" onclick="go('meters',108)">Enter readings</button></td></tr>
+      <tr><td class="mono">121</td><td>Electric reading</td><td class="r"><button class="btn secondary sm" onclick="go('meters',121)">Enter readings</button></td></tr>
+      <tr><td class="mono">134</td><td>Both readings</td><td class="r"><button class="btn secondary sm" onclick="go('meters',134)">Enter readings</button></td></tr></table>
+    <div class="btn-row"><button class="btn primary" onclick="go('invoices')">Done</button></div></div></main>`;
+
+V.invoices=()=>`<main class="page mid">
+  <h1>Invoices</h1><p class="sub">July 2026 · <a onclick="go('batch')" style="color:var(--indigo);cursor:pointer">Generate all ready</a></p>
+  <div class="filters"><button class="chip on">All</button><button class="chip">Unpaid</button><button class="chip">Pending</button><button class="chip">Paid</button><button class="chip">Rejected</button></div>
+  <div class="card" style="padding:8px 0"><table class="table">
+    <tr><th style="padding-left:24px">#</th><th>Room</th><th>Tenant</th><th class="r">Total</th><th>Due</th><th>Status</th></tr>
+    <tr class="click" onclick="go('invDetail')"><td class="mono" style="padding-left:24px">1042</td><td class="mono">105</td><td>Somchai Jaidee</td><td class="r mono">4,980.00</td><td>5 Aug</td><td><span class="pill unpaid">Unpaid</span></td></tr>
+    <tr class="click" onclick="go('verDetail')"><td class="mono" style="padding-left:24px">1041</td><td class="mono">103</td><td>Nok Suwan</td><td class="r mono">3,200.00</td><td>5 Aug</td><td><span class="pill pending">Pending</span></td></tr>
+    <tr class="click" onclick="go('invDetail')"><td class="mono" style="padding-left:24px">1040</td><td class="mono">101</td><td>Malee Srisuk</td><td class="r mono">4,500.00</td><td>5 Aug</td><td><span class="pill paid">Paid</span></td></tr>
+    <tr class="click" onclick="go('invDetail')"><td class="mono" style="padding-left:24px">1039</td><td class="mono">112</td><td>Prasit Boonmee</td><td class="r mono">4,200.00</td><td>5 Aug</td><td><span class="pill rejected">Rejected</span></td></tr></table></div></main>`;
+
+V.invDetail=()=>`<main class="page narrow">
+  <div class="crumb"><a onclick="go('invoices')">Invoices</a> &rsaquo; <b class="mono">#1042</b></div>
+  <h1>Invoice #1042 — Room 105, July 2026</h1><p class="sub">Somchai Jaidee · Due 5 Aug 2026 · <span class="pill unpaid">Unpaid</span></p>
+  <div class="card" style="max-width:560px"><table class="money">
+    <tr><td class="dim">Room charge</td><td>4,500.00</td></tr><tr><td class="dim">Electric — 52 × 7.50</td><td>390.00</td></tr>
+    <tr><td class="dim">Water — 5 × 18.00</td><td>90.00</td></tr><tr class="line"><td class="dim">Utility subtotal</td><td>480.00</td></tr>
+    <tr class="line"><td class="dim">Late fee <span style="font-size:12px">(live — recalculates daily)</span></td><td>0.00</td></tr>
+    <tr class="total"><td>Total (THB)</td><td>4,980.00</td></tr></table>
+    <div class="btn-row"><button class="btn primary" onclick="go('pay')">Submit payment</button></div>
+    <div class="line-mock" style="margin-top:20px"><div class="from">LINE · Tenant notification preview</div>
+      Amanew Residence<br>Invoice #1042 · July 2026<br>Total: ฿4,980.00<br>Due: 5 Aug 2026<br><br>Pay via PromptPay or transfer.</div>
+  </div></main>`;
+/* ═══════════ PAYMENTS ═══════════ */
+V.pay=()=>`<main class="page narrow">
+  <div class="crumb"><a onclick="go('invoices')">Invoices</a> &rsaquo; <a onclick="go('invDetail')" class="mono">#1042</a> &rsaquo; <b>Submit payment</b></div>
+  <h1>Payment — Invoice #1042</h1><p class="sub">Room 105 · Somchai Jaidee · Total due <span class="mono">4,980.00</span> THB</p>
+  <div class="card" style="max-width:560px">
+    <div class="field" style="max-width:220px"><label>Amount received (THB)</label><input class="mono" value="4980.00"></div>
+    <div class="field" style="max-width:220px"><label>Payment method</label>
+      <select id="pmethod" onchange="slipR()"><option value="transfer">Transfer</option><option value="qr">QR</option><option value="cash">Cash</option></select></div>
+    <div class="field" id="f-slip"><label>Payment slip <span class="opt" id="slipReq">(required for transfer)</span></label>
+      <div class="upload" id="slipbox" tabindex="0" onclick="this.classList.add('filled');this.textContent='✓ slip_1042.jpg — 214 KB';document.getElementById('f-slip').classList.remove('invalid')">Choose file — JPG, PNG or PDF, max 5MB</div>
+      <p class="msg">A slip is required for transfer and QR payments</p></div>
+    <div class="btn-row"><button class="btn primary" onclick="submitPay(this)">Submit payment</button>
+      <button class="btn secondary" onclick="go('invDetail')">Cancel</button></div>
+    <p class="hintline" style="margin-top:14px">The late fee is frozen at this moment.</p></div></main>`;
+function slipR(){const m=document.getElementById('pmethod').value;
+  document.getElementById('slipReq').textContent=m==='cash'?'(optional for cash)':`(required for ${m==='qr'?'QR':'transfer'})`;
+  document.getElementById('f-slip').classList.remove('invalid');}
+function submitPay(btn){const m=document.getElementById('pmethod').value,filled=document.getElementById('slipbox').classList.contains('filled');
+  const f=document.getElementById('f-slip');f.classList.remove('invalid');
+  if((m==='transfer'||m==='qr')&&!filled){f.classList.add('invalid');return;}
+  busy(btn,'Submitting',()=>{S.banner=null;go('verify');});}
+
+/* ═══════════ VERIFICATION ═══════════ */
+V.verify=()=>`<main class="page mid">
+  <h1>Pending verification</h1><p class="sub">Oldest first · Admin only</p>
+  <div class="card" style="padding:8px 0"><table class="table">
+    <tr><th style="padding-left:24px">Invoice</th><th>Room</th><th class="r">Amount</th><th>Method</th><th>Submitted by</th><th>Waiting</th></tr>
+    <tr class="click" onclick="go('verDetail')"><td class="mono" style="padding-left:24px">#1038</td><td class="mono">112</td><td class="r mono">4,200.00</td><td>Transfer</td><td>Staff A · 3 Jul</td><td><span class="wait old">5 days</span></td></tr>
+    <tr class="click" onclick="go('verDetail')"><td class="mono" style="padding-left:24px">#1042</td><td class="mono">105</td><td class="r mono">4,980.00</td><td>Transfer</td><td>Staff B · 8 Jul</td><td><span class="wait new">today</span></td></tr></table></div></main>`;
+
+V.verDetail=()=>`<main class="page mid">
+  <div class="crumb"><a onclick="go('verify')">Verify payments</a> &rsaquo; <b class="mono">#1042</b></div>
+  <h1>Invoice #1042 — 4,980.00 THB · Transfer</h1><p class="sub">Room 105 · Somchai Jaidee</p>
+  <div class="card"><div class="verify-grid">
+    <div class="slip"><div class="fake"><div class="bank">◆ DEMO BANK</div><div>Transfer successful</div>
+      <div class="amt">฿4,980.00</div><div class="row2"><span>To</span><span>AMANEW RESIDENCE</span></div>
+      <div class="row2"><span>Date</span><span>8 Jul 2026 14:32</span></div><div class="row2"><span>Ref</span><span class="mono">TXN88214···</span></div></div>
+      <span style="font-size:12px">Slip shown full size</span></div>
+    <div><dl class="meta"><dt>Submitted by</dt><dd>Staff B · 8 Jul 2026, 14:35</dd><dt>Invoice total</dt><dd class="mono">4,980.00</dd>
+      <dt>Amount recorded</dt><dd class="mono">4,980.00 <span class="match">✓ match</span></dd><dt>Late fee frozen</dt><dd class="mono">0.00</dd></dl>
+      <div class="btn-row"><button class="btn primary" onclick="doVerify(this)">Verify payment</button>
+        <button class="btn danger" onclick="rejectMod()">Reject</button></div>
+      <p style="font-size:12.5px;color:var(--ink-faint);margin-top:16px">Only Admin can verify — the staff who recorded this cannot confirm it.</p>
+      <div class="line-mock" style="margin-top:16px"><div class="from">LINE · Sent to tenant after verification</div>
+        Amanew Residence<br>Payment confirmed ✓<br>Invoice #1042 · ฿4,980.00<br>Thank you!</div>
+    </div></div></div></main>`;
+function doVerify(btn){busy(btn,'Verifying',()=>{S.banner='Payment verified — Invoice #1042 is now Paid';go('dash');});}
+function rejectMod(){
+  modal(`<div class="modal"><div class="kicker danger">Reject payment — #1042</div><h2>Why is this being rejected?</h2>
+    <p>The slip and payment record stay on file. The invoice returns to rejected until resubmitted.</p>
+    <div class="field" id="f-rej" style="margin-top:14px"><label>Reason (required)</label>
+      <input id="rejr" placeholder="e.g. amount does not match"><p class="msg">A reason is required</p></div>
+    <div class="btn-row"><button class="btn danger" onclick="doReject()">Reject payment</button>
+      <button class="btn secondary" onclick="closeModal()">Cancel</button></div></div>`);}
+function doReject(){const r=document.getElementById('rejr'),f=document.getElementById('f-rej');
+  f.classList.remove('invalid');r.classList.remove('err');
+  if(!r.value.trim()){f.classList.add('invalid');r.classList.add('err');r.focus();return;}
+  closeModal();S.banner='Payment rejected — reason recorded on Invoice #1042';go('dash');}
+
+/* ═══════════ ROOM SETTINGS ═══════════ */
+V.settings=()=>`<main class="page narrow">
+  <h1>Room settings</h1><p class="sub">Admin only · Change a room's rental type. Every change is logged.</p>
+  <div class="card" style="max-width:480px">
+    <div class="field" style="max-width:280px"><label>Room</label>
+      <select id="setR"><option value="102">Room 102 — monthly (occupied)</option><option value="115">Room 115 — monthly (vacant)</option></select></div>
+    <div class="field" style="max-width:280px"><label>New type</label><select><option>Daily</option><option>Monthly</option></select></div>
+    <p class="hintline">Rejected if the room has an active tenancy or upcoming booking.</p>
+    <div class="btn-row"><button class="btn primary" onclick="tryType(this)">Change type</button></div></div></main>`;
+function tryType(btn){const v=document.getElementById('setR').value;
+  busy(btn,'Changing',()=>{
+    if(v==='102'){modal(`<div class="modal"><div class="kicker danger">Change rejected</div><h2>Room 102 has an active tenancy</h2><p>The type cannot change until the tenancy ends.</p>
+      <div class="btn-row"><button class="btn primary" onclick="closeModal()">OK</button></div></div>`);
+    } else {S.banner='Room 115 changed to daily — logged';go('dash');}});}
+
+/* boot */
+go('dash');
+</script>
+</body>
+</html>

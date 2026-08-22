@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S41 · ประกาศ — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .ann-card { border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+  .ann-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .ann-head .ann-title { font-weight: 700; font-size: 15px; flex: 1; }
+  .ann-body { font-size: 13px; color: var(--text); white-space: pre-wrap; }
+  .ann-meta { font-size: 12px; color: var(--text-muted); display: flex; gap: 14px; flex-wrap: wrap; }
+  .read-bar { height: 8px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); overflow: hidden; max-width: 260px; }
+  .read-bar > span { display: block; height: 100%; background: var(--success); }
+  .room-chips { display: flex; flex-wrap: wrap; gap: 5px; max-height: 128px; overflow-y: auto; padding: 4px; border: 1px solid var(--border); border-radius: var(--radius); }
+  .room-chips button { border: 1px solid var(--border); background: var(--card-bg); color: var(--text-muted); border-radius: 6px; min-width: 46px; padding: 5px 4px; font-family: var(--font-mono); font-size: 12px; font-weight: 600; }
+  .room-chips button.on { background: var(--primary-soft); color: var(--primary); border-color: var(--primary); }
+</style>
+</head>
+<body data-style="a" data-screen="S41" data-title="ประกาศ">
+<div class="page-content" id="page-content">
+
+  <div id="ann-body-wrap">
+    <!-- Compose -->
+    <div class="card">
+      <div class="page-header-row">
+        <h3 style="margin:0;">ส่งประกาศถึงผู้เช่า</h3>
+        <div class="spacer"></div>
+        <span class="muted" style="font-size:12px;">ส่งเข้าแอปผู้เช่าทันที และเข้า LINE ของผู้ที่เปิดรับไว้</span>
+      </div>
+
+      <form id="ann-form" class="form-grid" style="margin-top:14px;">
+        <div class="field full">
+          <label>หัวข้อ <span class="req">*</span></label>
+          <input type="text" id="a-title" placeholder="เช่น แจ้งหยุดจ่ายน้ำชั่วคราว">
+        </div>
+        <div class="field full">
+          <label>ข้อความ <span class="req">*</span></label>
+          <textarea id="a-body" rows="4" placeholder="เช่น วันเสาร์ที่ 2 ส.ค. 69 เวลา 09:00–15:00 การประปาจะปิดซ่อมท่อเมน กรุณาสำรองน้ำใช้"></textarea>
+          <div class="error" id="a-error" style="display:none;">กรุณากรอกหัวข้อและข้อความ</div>
+        </div>
+
+        <div class="field full">
+          <label>ส่งถึง <span class="req">*</span></label>
+          <div class="floor-jump" id="target-pick">
+            <button type="button" data-v="all" class="active">ทุกห้องที่มีผู้เช่า</button>
+            <button type="button" data-v="floor">เลือกทั้งชั้น</button>
+            <button type="button" data-v="rooms">เลือกรายห้อง</button>
+          </div>
+          <div class="hint" id="target-hint"></div>
+        </div>
+        <div class="field full" id="floor-slot" style="display:none;">
+          <div class="floor-jump" id="floor-pick">
+            <button type="button" data-f="1">ชั้น 1</button><button type="button" data-f="2">ชั้น 2</button>
+            <button type="button" data-f="3">ชั้น 3</button><button type="button" data-f="4">ชั้น 4</button>
+          </div>
+        </div>
+        <div class="field full" id="rooms-slot" style="display:none;">
+          <div class="room-chips" id="room-chips"></div>
+        </div>
+
+        <div class="field full">
+          <label>ช่องทาง</label>
+          <div style="display:flex; gap:18px; flex-wrap:wrap;">
+            <label class="mb-est" style="font-size:13px;"><input type="checkbox" checked disabled> ในแอป (บังคับ)</label>
+            <label class="mb-est" style="font-size:13px;"><input type="checkbox" id="ch-line" checked> LINE (เฉพาะผู้ที่เปิดรับ)</label>
+            <label class="mb-est" style="font-size:13px;"><input type="checkbox" id="allow-comment"> เปิดให้ผู้เช่าคอมเมนต์</label>
+          </div>
+          <div class="hint">ผู้เช่าที่ไม่ได้เชื่อม LINE จะยังได้รับในแอปเสมอ — ไม่มีใครพลาดประกาศเพราะไม่มี LINE</div>
+        </div>
+
+        <div class="field full" style="flex-direction:row; gap:10px; margin-top:6px;">
+          <button type="submit" class="btn btn-primary" data-primary>ส่งประกาศ</button>
+          <span class="muted" style="font-size:12px; align-self:center;" id="send-count"></span>
+        </div>
+      </form>
+    </div>
+
+    <!-- Sent, with read receipts (Rule 12.3) -->
+    <div class="card">
+      <h3 style="font-size:14px;">ประกาศที่ส่งแล้ว</h3>
+      <div id="ann-list" style="display:flex; flex-direction:column; gap:12px; margin-top:10px;"></div>
+    </div>
+  </div>
+
+  <div class="card" id="no-access-card" style="display:none;">
+    <p>หน้านี้สำหรับเจ้าของและพนักงานเท่านั้น</p>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var role = window.AmanewRole ? window.AmanewRole.current() : 'admin';
+  var occupiedRooms = D.rooms.filter(function (r) { return r.state === 'occupied'; });
+  var mode = 'all';
+  var chosenFloors = [];
+  var chosenRooms = [];
+
+  var announcements = [
+    { id: 'A-1', title: 'ปิดน้ำชั่วคราว ชั้น 3–4', body: 'วันพุธที่ 22 ก.ค. 69 เวลา 10:00–14:00 ปิดน้ำเพื่อล้างถังเก็บน้ำ กรุณาสำรองน้ำใช้ล่วงหน้า',
+      sentAt: '20 ก.ค. 69 09:12', by: 'เจ้าของ', targetLabel: 'ชั้น 3–4 (24 ห้อง)', total: 24, read: 21, line: true, comments: false },
+    { id: 'A-2', title: 'เก็บค่าเช่าเดือนสิงหาคม', body: 'บิลเดือน ส.ค. จะออกวันที่ 1 ส.ค. ครบกำหนดชำระวันที่ 5 ส.ค. หลังจากนั้นมีค่าปรับวันละ ฿50 ตามระเบียบ',
+      sentAt: '28 ก.ค. 69 17:40', by: 'เจ้าของ', targetLabel: 'ทุกห้องที่มีผู้เช่า (' + occupiedRooms.length + ' ห้อง)', total: occupiedRooms.length, read: 33, line: true, comments: true },
+    { id: 'A-3', title: 'ห้ามจอดรถหน้าทางเข้า', body: 'มีรถจอดขวางทางเข้า-ออกบ่อยครั้ง รบกวนจอดในช่องที่กำหนดเท่านั้น',
+      sentAt: '30 ก.ค. 69 08:05', by: 'พนักงาน นก', targetLabel: 'ทุกห้องที่มีผู้เช่า (' + occupiedRooms.length + ' ห้อง)', total: occupiedRooms.length, read: 12, line: false, comments: false }
+  ];
+
+  function targetRooms() {
+    if (mode === 'all') return occupiedRooms;
+    if (mode === 'floor') return occupiedRooms.filter(function (r) { return chosenFloors.indexOf(String(r.floor)) !== -1; });
+    return occupiedRooms.filter(function (r) { return chosenRooms.indexOf(r.number) !== -1; });
+  }
+  function targetLabel() {
+    var n = targetRooms().length;
+    if (mode === 'all') return 'ทุกห้องที่มีผู้เช่า (' + n + ' ห้อง)';
+    if (mode === 'floor') return chosenFloors.length ? 'ชั้น ' + chosenFloors.join(', ') + ' (' + n + ' ห้อง)' : 'ยังไม่ได้เลือกชั้น';
+    return n ? 'เลือก ' + n + ' ห้อง' : 'ยังไม่ได้เลือกห้อง';
+  }
+  function refreshTarget() {
+    document.getElementById('target-hint').textContent = targetLabel();
+    document.getElementById('send-count').textContent = 'จะส่งถึง ' + targetRooms().length + ' ห้อง';
+  }
+
+  document.getElementById('room-chips').innerHTML = occupiedRooms.map(function (r) {
+    return '<button type="button" data-room="' + r.number + '">' + r.number + '</button>';
+  }).join('');
+
+  document.getElementById('target-pick').addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-v]');
+    if (!btn) return;
+    document.querySelectorAll('#target-pick button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+    mode = btn.dataset.v;
+    document.getElementById('floor-slot').style.display = mode === 'floor' ? '' : 'none';
+    document.getElementById('rooms-slot').style.display = mode === 'rooms' ? '' : 'none';
+    refreshTarget();
+  });
+  document.getElementById('floor-pick').addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-f]');
+    if (!btn) return;
+    var f = btn.dataset.f;
+    var i = chosenFloors.indexOf(f);
+    if (i === -1) { chosenFloors.push(f); btn.classList.add('active'); }
+    else { chosenFloors.splice(i, 1); btn.classList.remove('active'); }
+    refreshTarget();
+  });
+  document.getElementById('room-chips').addEventListener('click', function (e) {
+    var btn = e.target.closest('button[data-room]');
+    if (!btn) return;
+    var n = btn.dataset.room;
+    var i = chosenRooms.indexOf(n);
+    if (i === -1) { chosenRooms.push(n); btn.classList.add('on'); }
+    else { chosenRooms.splice(i, 1); btn.classList.remove('on'); }
+    refreshTarget();
+  });
+
+  function renderList() {
+    document.getElementById('ann-list').innerHTML = announcements.map(function (a) {
+      var pct = a.total ? Math.round(a.read / a.total * 100) : 0;
+      return '<div class="ann-card">' +
+        '<div class="ann-head"><span class="ann-title">' + a.title + '</span>' +
+          '<span class="status-badge badge-neutral">' + a.targetLabel + '</span>' +
+          (a.line ? '<span class="status-badge badge-success">ส่ง LINE ด้วย</span>' : '<span class="status-badge badge-neutral">ในแอปเท่านั้น</span>') +
+          (a.comments ? '<span class="status-badge badge-info">เปิดคอมเมนต์</span>' : '') +
+        '</div>' +
+        '<div class="ann-body">' + a.body + '</div>' +
+        '<div class="ann-meta"><span>ส่งเมื่อ ' + a.sentAt + '</span><span>โดย ' + a.by + '</span></div>' +
+        '<div class="ann-meta" style="align-items:center;">' +
+          '<span>อ่านแล้ว <strong>' + a.read + '/' + a.total + '</strong> ห้อง (' + pct + '%)</span>' +
+          '<span class="read-bar" style="flex:1;"><span style="width:' + pct + '%;"></span></span>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  Demo.submitWithSpinner(document.getElementById('ann-form'), function (e, restore) {
+    var title = document.getElementById('a-title').value.trim();
+    var body = document.getElementById('a-body').value.trim();
+    var n = targetRooms().length;
+    if (!title || !body || !n) {
+      document.getElementById('a-error').style.display = 'block';
+      document.getElementById('a-error').textContent = !n ? 'ยังไม่ได้เลือกห้องปลายทาง' : 'กรุณากรอกหัวข้อและข้อความ';
+      restore();
+      return;
+    }
+    document.getElementById('a-error').style.display = 'none';
+    announcements.unshift({
+      id: 'A-' + (announcements.length + 1), title: title, body: body,
+      sentAt: D.thaiDate(D.TODAY) + ' ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+      by: role === 'admin' ? 'เจ้าของ' : 'พนักงาน (เดโม)',
+      targetLabel: targetLabel(), total: n, read: 0,
+      line: document.getElementById('ch-line').checked,
+      comments: document.getElementById('allow-comment').checked
+    });
+    restore();
+    document.getElementById('a-title').value = '';
+    document.getElementById('a-body').value = '';
+    renderList();
+    var pc = document.getElementById('page-content');
+    var old = pc.querySelector('.success-banner');
+    if (old) old.remove();
+    var banner = document.createElement('div');
+    banner.className = 'success-banner';
+    banner.textContent = '✓ ส่งประกาศถึง ' + n + ' ห้องแล้ว — ในแอปทุกห้อง' +
+      (document.getElementById('ch-line').checked ? ' และ LINE สำหรับผู้ที่เปิดรับ' : '');
+    pc.insertBefore(banner, pc.firstChild);
+  }, 700);
+
+  refreshTarget();
+  renderList();
+
+  if (role === 'worker') {
+    document.getElementById('ann-body-wrap').style.display = 'none';
+    document.getElementById('no-access-card').style.display = 'block';
+  }
+</script>
+</body>
+</html>

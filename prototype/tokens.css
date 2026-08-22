@@ -1,0 +1,190 @@
+/* ============================================================
+   Amanew — Design Tokens
+   Three style directions (Handoff §5). Same variable names in
+   each scope: switching style = switching data-style on <body>.
+   ============================================================ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body {
+  font-family: var(--font-body);
+  font-size: var(--fs-base);
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4 {
+  font-family: var(--font-heading);
+  font-weight: var(--fw-heading);
+  letter-spacing: var(--ls-heading);
+  color: var(--text);
+}
+
+a { color: var(--primary); text-decoration: none; }
+button { font-family: inherit; font-size: inherit; cursor: pointer; }
+input, select, textarea { font-family: inherit; font-size: inherit; color: var(--text); }
+
+/* ---------- Style A — "Clean Professional" ---------- */
+body[data-style="a"] {
+  --font-heading: 'IBM Plex Sans Thai', sans-serif;
+  --font-body: 'IBM Plex Sans Thai', sans-serif;
+  --fs-base: 14px;
+  --fw-heading: 600;
+  --ls-heading: 0;
+
+  --bg: #FFFFFF;
+  --surface: #F7F8FA;
+  --card-bg: #FFFFFF;
+  --border: #E5E7EB;
+  --primary: #2563EB;
+  --primary-soft: #EFF6FF;
+  --primary-contrast: #FFFFFF;
+  --text: #111827;
+  --text-muted: #6B7280;
+
+  --success: #16A34A;
+  --info: #2563EB;
+  --warning: #D97706;
+  --danger: #DC2626;
+  --neutral: #9CA3AF;
+
+  --radius: 8px;
+  --btn-radius: 8px;
+  --card-border: 1px solid #E5E7EB;
+  --card-shadow: none;
+  --drawer-shadow: 0 4px 24px rgba(17, 24, 39, .10);
+  --interactive-shadow: none;
+
+  /* chrome = sidebar/topbar — kept visibly darker than the white content
+     area so the sidebar reads as the page's visual anchor */
+  --chrome-bg: #F1F3F6;
+  --chrome-text: #111827;
+  --chrome-muted: #6B7280;
+  --chrome-border: #E1E4E9;
+  --chrome-active-bg: #E4EBFB;
+  --chrome-active-text: #2563EB;
+
+  /* density: compact, data-forward */
+  --pad-card: 14px 16px;
+  --pad-cell: 8px 12px;
+  --gap: 12px;
+  --btn-pad: 8px 16px;
+  --btn-pad-sm: 5px 12px;
+}
+
+/* ---------- Style B — "Warm Thai" ---------- */
+body[data-style="b"] {
+  --font-heading: 'Prompt', sans-serif;
+  --font-body: 'Sarabun', sans-serif;
+  --fs-base: 15px;
+  --fw-heading: 600;
+  --ls-heading: 0;
+
+  --bg: #FFFBF5;
+  --surface: #FFF7EE;
+  --card-bg: #FFFFFF;
+  --border: #F0E6D9;
+  --primary: #F97316;
+  --primary-soft: #FFF1E6;
+  --primary-contrast: #FFFFFF;
+  --text: #292524;
+  --text-muted: #78716C;
+
+  --success: #15803D;
+  --info: #2563EB;
+  --warning: #B45309;
+  --danger: #B91C1C;
+  --neutral: #A8A29E;
+
+  --radius: 14px;
+  --btn-radius: 999px;
+  --card-border: none;
+  --card-shadow: 0 2px 10px rgba(120, 80, 40, .08);
+  --drawer-shadow: 0 6px 30px rgba(120, 80, 40, .16);
+  --interactive-shadow: 0 2px 8px rgba(120, 80, 40, .10);
+
+  /* chrome = sidebar/topbar — warmer/darker tan so it reads as the anchor
+     against the cream content area */
+  --chrome-bg: #F5EBD9;
+  --chrome-text: #292524;
+  --chrome-muted: #78716C;
+  --chrome-border: #EADBC2;
+  --chrome-active-bg: #FDE2C8;
+  --chrome-active-text: #C2410C;
+
+  /* density: roomy — bigger targets, fewer items */
+  --pad-card: 18px 20px;
+  --pad-cell: 12px 14px;
+  --gap: 16px;
+  --btn-pad: 12px 24px;
+  --btn-pad-sm: 8px 16px;
+}
+
+/* ---------- Style C — "Bold Operator" ---------- */
+body[data-style="c"] {
+  --font-heading: 'Noto Sans Thai', sans-serif;
+  --font-body: 'Noto Sans Thai', sans-serif;
+  --fs-base: 14px;
+  --fw-heading: 700;
+  --ls-heading: -0.01em;
+
+  --bg: #F8FAFC;
+  --surface: #F1F5F9;
+  --card-bg: #FFFFFF;
+  --border: #E2E8F0;
+  --primary: #0D9488;
+  --primary-soft: #F0FDFA;
+  --primary-contrast: #FFFFFF;
+  --text: #0F172A;
+  --text-muted: #64748B;
+
+  --success: #059669;
+  --info: #0284C7;
+  --warning: #D97706;
+  --danger: #E11D48;
+  --neutral: #64748B;
+
+  --radius: 6px;
+  --btn-radius: 6px;
+  --card-border: 1px solid #E2E8F0;
+  --card-shadow: none;
+  --drawer-shadow: 0 8px 32px rgba(15, 23, 42, .18);
+  --interactive-shadow: 0 1px 3px rgba(15, 23, 42, .12);
+
+  /* dark chrome, light content */
+  --chrome-bg: #0F172A;
+  --chrome-text: #F8FAFC;
+  --chrome-muted: #94A3B8;
+  --chrome-border: #1E293B;
+  --chrome-active-bg: rgba(13, 148, 136, .22);
+  --chrome-active-text: #5EEAD4;
+
+  /* density: high, KPI-forward */
+  --pad-card: 12px 14px;
+  --pad-cell: 7px 12px;
+  --gap: 10px;
+  --btn-pad: 7px 14px;
+  --btn-pad-sm: 4px 10px;
+}
+
+/* ---------- Derived soft tints (same recipe, all styles) ---------- */
+body[data-style] {
+  /* numeric font — amounts, room numbers, counts always read as mono across all 3 styles */
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  --success-soft: color-mix(in srgb, var(--success) 12%, var(--card-bg));
+  --info-soft:    color-mix(in srgb, var(--info) 12%, var(--card-bg));
+  --warning-soft: color-mix(in srgb, var(--warning) 14%, var(--card-bg));
+  --danger-soft:  color-mix(in srgb, var(--danger) 11%, var(--card-bg));
+  --neutral-soft: color-mix(in srgb, var(--neutral) 14%, var(--card-bg));
+
+  /* rental-type accent — fixed across all 3 styles so รายเดือน/รายวัน
+     always reads the same way (owner requirement: never confuse the two) */
+  --rental-monthly: #4F46E5;
+  --rental-monthly-soft: color-mix(in srgb, var(--rental-monthly) 12%, var(--card-bg));
+  --rental-daily: #EA580C;
+  --rental-daily-soft: color-mix(in srgb, var(--rental-daily) 12%, var(--card-bg));
+}

@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S24 · ตั้งค่าห้อง — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S24" data-title="ตั้งค่าห้อง">
+<div class="page-content" id="page-content">
+
+  <div data-admin-only>
+
+    <!-- 1. Standard prices — the single source every booking/contract screen reads.
+            Two room types: เตียงเดี่ยว / เตียงคู่. Nothing types a price from scratch elsewhere. -->
+    <div class="card">
+      <div class="page-header-row">
+        <h3 style="margin:0;">ราคามาตรฐานตามประเภทห้อง</h3>
+        <div class="spacer"></div>
+        <span class="muted" style="font-size:12px;">ใช้เป็นราคาตั้งต้นของทุกสัญญาใหม่และทุกการจองรายวัน</span>
+      </div>
+      <div class="price-cards" style="margin-top:14px;" id="price-cards"></div>
+      <div class="rule-note" style="margin-top:14px;">
+        แก้ราคามาตรฐานแล้ว <strong>มีผลกับสัญญาใหม่และการจองใหม่เท่านั้น</strong> —
+        ผู้เช่าที่มีสัญญาอยู่แล้วยังคงจ่ายราคาเดิมตลอดอายุสัญญา ระบบไม่มีการแก้ค่าเช่ากลางสัญญา
+      </div>
+    </div>
+
+    <!-- Utility rates: property-wide, not per room, and the one number staff must
+         never be able to type into a meter form. Editing here is the only path. -->
+    <div class="card">
+      <div class="page-header-row">
+        <h3 style="margin:0;">อัตราค่าน้ำ-ไฟ</h3>
+        <div class="spacer"></div>
+        <span class="muted" style="font-size:12px;">ใช้กับทุกห้อง — คิดตามหน่วยที่ใช้จริง</span>
+      </div>
+      <div class="price-cards" style="margin-top:14px;" id="rate-cards"></div>
+      <div class="rule-note" style="margin-top:14px;">
+        แก้อัตราแล้วมีผลกับ<strong>บิลรอบถัดไป</strong> — บิลที่ออกไปแล้วใช้อัตราเดิมที่ถูกบันทึกไว้ในบิลนั้น (ไม่คิดย้อนหลัง)
+      </div>
+    </div>
+
+    <!-- 2. All 60 rooms in one table — the part that was missing. -->
+    <div class="card">
+      <div class="page-header-row">
+        <h3 style="margin:0;">ห้องทั้งหมด <span class="muted" style="font-weight:400; font-size:13px;">(<span id="room-count"></span> ห้อง)</span></h3>
+        <div class="spacer"></div>
+        <span class="muted" style="font-size:12px;">คลิกแถวเพื่อแก้ไขห้องนั้น</span>
+      </div>
+
+      <div class="settings-filters" style="margin:14px 0;">
+        <div class="sf-group">
+          <span class="sf-label">ชั้น</span>
+          <div class="floor-jump" id="f-floor">
+            <button type="button" data-v="all" class="active">ทั้งหมด</button>
+            <button type="button" data-v="1">1</button><button type="button" data-v="2">2</button>
+            <button type="button" data-v="3">3</button><button type="button" data-v="4">4</button>
+          </div>
+        </div>
+        <div class="sf-group">
+          <span class="sf-label">ประเภทห้อง</span>
+          <div class="floor-jump" id="f-type">
+            <button type="button" data-v="all" class="active">ทั้งหมด</button>
+            <button type="button" data-v="double">🛏🛏 เตียงคู่</button>
+            <button type="button" data-v="single">🛏 เตียงเดี่ยว</button>
+          </div>
+        </div>
+        <div class="sf-group">
+          <span class="sf-label">รูปแบบการเช่า</span>
+          <div class="floor-jump" id="f-rental">
+            <button type="button" data-v="all" class="active">ทั้งหมด</button>
+            <button type="button" data-v="monthly">รายเดือน</button>
+            <button type="button" data-v="daily">รายวัน</button>
+          </div>
+        </div>
+      </div>
+
+      <table class="data-table">
+        <thead><tr>
+          <th style="width:90px;">ห้อง</th>
+          <th style="width:110px;">ประเภทห้อง</th>
+          <th style="width:120px;">รูปแบบการเช่า</th>
+          <th class="td-money" style="width:130px;">ค่าเช่า/เดือน</th>
+          <th class="td-money" style="width:120px;">ราคา/คืน</th>
+          <th style="width:130px;">สถานะ</th>
+          <th>ผู้เช่าปัจจุบัน</th>
+        </tr></thead>
+        <tbody id="room-rows"></tbody>
+      </table>
+      <div class="muted" style="font-size:12px; margin-top:10px;" id="filter-summary"></div>
+      <div class="demo-note" style="margin-top:12px;">โหมดสาธิต: กด Shift ค้างไว้ตอนกด "บันทึก" ในหน้าต่างแก้ไขห้อง เพื่อดูสถานการณ์ถูกปฏิเสธ (S25)</div>
+    </div>
+
+  </div>
+
+  <div class="card" id="no-access-card" style="display:none;">
+    <p>หน้านี้สำหรับผู้ดูแลระบบ (Admin) เท่านั้น</p>
+  </div>
+
+</div>
+
+<!-- Standard-price edit (owner-only permission: แก้ราคาห้องตั้งต้น) -->
+<div class="modal-overlay" id="price-modal" aria-hidden="true">
+  <div class="modal-box">
+    <h2>แก้ราคามาตรฐาน — <span id="pm-type-label"></span></h2>
+    <form id="price-form" class="form-grid">
+      <div class="field full">
+        <label>ค่าเช่า/เดือน (บาท) <span class="req">*</span></label>
+        <input type="number" id="pm-rent" min="0" step="100" required>
+      </div>
+      <div class="field full">
+        <label>ราคา/คืน (บาท) <span class="req">*</span></label>
+        <input type="number" id="pm-nightly" min="0" step="50" required>
+      </div>
+      <div class="field full">
+        <div class="rule-note">มีผลกับสัญญาใหม่และการจองใหม่เท่านั้น — ห้องที่มีผู้เช่าอยู่ยังใช้ราคาเดิม</div>
+      </div>
+      <div class="modal-actions" style="grid-column:1/-1;">
+        <button type="button" class="btn btn-secondary" id="pm-cancel">ยกเลิก</button>
+        <button type="submit" class="btn btn-primary" data-primary>บันทึกราคามาตรฐาน</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Utility rate edit (owner-only permission: ตั้งค่าระบบ) -->
+<div class="modal-overlay" id="rate-modal" aria-hidden="true">
+  <div class="modal-box">
+    <h2>แก้อัตรา<span id="rm-util-label"></span></h2>
+    <form id="rate-form" class="form-grid">
+      <div class="field full">
+        <label>อัตราต่อหน่วย (บาท) <span class="req">*</span></label>
+        <input type="number" id="rate-value" min="0" step="0.5" required>
+        <div class="hint" id="rate-hint"></div>
+      </div>
+      <div class="field full">
+        <div class="rule-note">มีผลกับบิลรอบถัดไปเท่านั้น — ไม่คิดย้อนหลังกับบิลที่ออกไปแล้ว</div>
+      </div>
+      <div class="modal-actions" style="grid-column:1/-1;">
+        <button type="button" class="btn btn-secondary" id="rate-cancel">ยกเลิก</button>
+        <button type="submit" class="btn btn-primary" data-primary>บันทึกอัตรา</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Per-room edit -->
+<div class="modal-overlay" id="room-modal" aria-hidden="true">
+  <div class="modal-box">
+    <h2>แก้ไขห้อง <span id="rm-room"></span></h2>
+    <form id="room-form" class="form-grid">
+      <div class="field full">
+        <label>ประเภทห้อง <span class="req">*</span></label>
+        <select id="rm-type">
+          <option value="double">🛏🛏 ห้องเตียงคู่</option>
+          <option value="single">🛏 ห้องเตียงเดี่ยว</option>
+        </select>
+        <div class="hint" id="rm-type-hint"></div>
+      </div>
+      <div class="field full">
+        <label>รูปแบบการเช่า <span class="req">*</span></label>
+        <select id="rm-rental">
+          <option value="monthly">รายเดือน</option>
+          <option value="daily">รายวัน</option>
+        </select>
+        <div class="hint">จะถูกปฏิเสธหากห้องมีผู้เช่าอยู่หรือมีการจองล่วงหน้า</div>
+      </div>
+      <div class="field full">
+        <label>ราคาเฉพาะห้องนี้ (ไม่บังคับ)</label>
+        <div style="display:flex; gap:10px;">
+          <input type="number" id="rm-rent" min="0" step="100" placeholder="ค่าเช่า/เดือน">
+          <input type="number" id="rm-nightly" min="0" step="50" placeholder="ราคา/คืน">
+        </div>
+        <div class="hint">เว้นว่าง = ใช้ราคามาตรฐานของประเภทห้อง (ห้องมุม/ห้องใหญ่จึงตั้งราคาต่างได้)</div>
+      </div>
+      <div class="field full">
+        <div class="rule-note">ทุกการเปลี่ยนแปลงถูกบันทึกไว้ในประวัติ (audit log)</div>
+      </div>
+      <div class="modal-actions" style="grid-column:1/-1;">
+        <button type="button" class="btn btn-secondary" id="rm-cancel">ยกเลิก</button>
+        <button type="submit" class="btn btn-primary" data-primary>บันทึก</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- S25 — Room type change conflict dialog (single-exit) -->
+<div class="dialog-overlay" id="conflict-dialog" aria-hidden="true">
+  <div class="dialog-box">
+    <span class="screen-id">S25 · ไม่สามารถเปลี่ยนรูปแบบการเช่าได้</span>
+    <div class="dialog-reason">บันทึกการเปลี่ยนแปลงไม่สำเร็จ</div>
+    <div class="dialog-what">ห้อง <span id="conflict-room"></span> มีผู้เช่าอยู่ในปัจจุบัน (สัญญายังไม่สิ้นสุด)</div>
+    <div class="dialog-next">รอให้สัญญาเช่าสิ้นสุดก่อน จึงจะเปลี่ยนรูปแบบการเช่าของห้องนี้ได้</div>
+    <div class="dialog-actions">
+      <button type="button" class="btn btn-primary" id="ack-btn">รับทราบ</button>
+    </div>
+  </div>
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var STATE_LABEL = { vacant: 'ว่าง', occupied: 'มีผู้เช่า', reserved: 'จองแล้ว' };
+  var STATE_BADGE = { vacant: 'badge-success', occupied: 'badge-info', reserved: 'badge-warning' };
+  var filters = { floor: 'all', type: 'all', rental: 'all' };
+
+  /* ---- Standard price cards ---- */
+  function renderPriceCards() {
+    document.getElementById('price-cards').innerHTML = ['double', 'single'].map(function (key) {
+      var t = D.ROOM_TYPES[key];
+      var count = D.rooms.filter(function (r) { return r.roomType === key; }).length;
+      return '<div class="price-card ' + key + '">' +
+        '<div class="pc-head">' + t.icon + ' ' + t.label + ' <span class="pc-count">· ' + count + ' ห้อง</span></div>' +
+        '<div class="pc-prices">' +
+          '<div class="pc-price"><div class="pcp-label">ค่าเช่า/เดือน</div>' +
+            '<div class="pcp-value">' + D.money(t.defaultRent) + '</div><div class="pcp-unit">รายเดือน</div></div>' +
+          '<div class="pc-price"><div class="pcp-label">ราคา/คืน</div>' +
+            '<div class="pcp-value">' + D.money(t.defaultNightly) + '</div><div class="pcp-unit">รายวัน</div></div>' +
+        '</div>' +
+        '<button type="button" class="btn btn-secondary btn-sm" data-edit-price="' + key + '">แก้ราคามาตรฐาน</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  /* ---- Utility rates ---- */
+  var UTIL_META = {
+    electric: { label: 'ค่าไฟฟ้า', icon: '⚡', unit: 'บาท/หน่วย', cls: 'double' },
+    water: { label: 'ค่าน้ำ', icon: '💧', unit: 'บาท/หน่วย', cls: '' }
+  };
+  function renderRateCards() {
+    document.getElementById('rate-cards').innerHTML = ['electric', 'water'].map(function (k) {
+      var m = UTIL_META[k];
+      return '<div class="price-card ' + m.cls + '">' +
+        '<div class="pc-head">' + m.icon + ' ' + m.label + '</div>' +
+        '<div class="pc-prices">' +
+          '<div class="pc-price"><div class="pcp-label">อัตราปัจจุบัน</div>' +
+            '<div class="pcp-value">' + D.money(D.UTILITY_RATES[k]) + '</div><div class="pcp-unit">' + m.unit + '</div></div>' +
+        '</div>' +
+        '<button type="button" class="btn btn-secondary btn-sm" data-edit-rate="' + k + '">แก้อัตรา</button>' +
+      '</div>';
+    }).join('');
+  }
+
+  var editingUtil = null;
+  document.getElementById('rate-cards').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-edit-rate]');
+    if (!btn) return;
+    editingUtil = btn.dataset.editRate;
+    document.getElementById('rm-util-label').textContent = UTIL_META[editingUtil].label;
+    document.getElementById('rate-value').value = D.UTILITY_RATES[editingUtil];
+    document.getElementById('rate-hint').textContent = 'อัตราปัจจุบัน ' + D.money(D.UTILITY_RATES[editingUtil]) + ' ' + UTIL_META[editingUtil].unit;
+    Demo.openDialog('rate-modal', btn);
+  });
+  document.getElementById('rate-cancel').addEventListener('click', function () { Demo.closeDialog('rate-modal'); });
+  Demo.submitWithSpinner(document.getElementById('rate-form'), function (e, restore) {
+    D.UTILITY_RATES[editingUtil] = Number(document.getElementById('rate-value').value);
+    restore();
+    Demo.closeDialog('rate-modal');
+    renderRateCards();
+    banner('อัปเดตอัตรา' + UTIL_META[editingUtil].label + ' เป็น ' + D.money(D.UTILITY_RATES[editingUtil]) + '/หน่วย — มีผลกับบิลรอบถัดไป');
+  }, 500);
+
+  /* ---- Room table ---- */
+  function renderRooms() {
+    var list = D.rooms.filter(function (r) {
+      return (filters.floor === 'all' || String(r.floor) === filters.floor) &&
+             (filters.type === 'all' || r.roomType === filters.type) &&
+             (filters.rental === 'all' || r.rentalType === filters.rental);
+    });
+    document.getElementById('room-count').textContent = D.rooms.length;
+    document.getElementById('room-rows').innerHTML = list.map(function (r) {
+      var t = D.roomTypeOf(r);
+      var rentOverridden = r.rentOverride != null;
+      var nightlyOverridden = r.nightlyOverride != null;
+      return '<tr data-room="' + r.number + '">' +
+        '<td class="mb-room" style="font-family:var(--font-mono); font-weight:700;">' + r.number + '</td>' +
+        '<td><span class="type-chip ' + t.key + '">' + t.icon + ' ' + t.short + '</span></td>' +
+        '<td>' + (r.rentalType === 'monthly' ? 'รายเดือน' : 'รายวัน') + '</td>' +
+        '<td class="td-money">' + (r.rentalType === 'monthly'
+            ? D.money(D.rentFor(r)) + (rentOverridden ? '<div class="override-note">ราคาเฉพาะห้อง</div>' : '') +
+              (r.rent && r.rent !== D.rentFor(r)
+                ? '<div class="td-muted" style="font-size:11px; font-weight:400;">สัญญาปัจจุบัน ' + D.money(r.rent) + ' (ล็อกไว้)</div>' : '')
+            : '<span class="td-muted">—</span>') + '</td>' +
+        '<td class="td-money">' + (r.rentalType === 'daily'
+            ? D.money(D.nightlyFor(r)) + (nightlyOverridden ? '<div class="override-note">ราคาเฉพาะห้อง</div>' : '')
+            : '<span class="td-muted">—</span>') + '</td>' +
+        '<td><span class="status-badge ' + STATE_BADGE[r.state] + '">' + STATE_LABEL[r.state] + '</span></td>' +
+        '<td class="td-muted">' + (r.occupant || '—') + '</td>' +
+      '</tr>';
+    }).join('');
+    document.getElementById('filter-summary').textContent = 'แสดง ' + list.length + ' จาก ' + D.rooms.length + ' ห้อง';
+  }
+
+  function bindFilterGroup(id, key) {
+    document.getElementById(id).addEventListener('click', function (e) {
+      var btn = e.target.closest('button[data-v]');
+      if (!btn) return;
+      document.querySelectorAll('#' + id + ' button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+      filters[key] = btn.dataset.v;
+      renderRooms();
+    });
+  }
+  bindFilterGroup('f-floor', 'floor');
+  bindFilterGroup('f-type', 'type');
+  bindFilterGroup('f-rental', 'rental');
+
+  renderPriceCards();
+  renderRateCards();
+  renderRooms();
+
+  /* ---- Standard price modal ---- */
+  var editingType = null;
+  document.getElementById('price-cards').addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-edit-price]');
+    if (!btn) return;
+    editingType = btn.dataset.editPrice;
+    var t = D.ROOM_TYPES[editingType];
+    document.getElementById('pm-type-label').textContent = t.label;
+    document.getElementById('pm-rent').value = t.defaultRent;
+    document.getElementById('pm-nightly').value = t.defaultNightly;
+    Demo.openDialog('price-modal', btn);
+  });
+  document.getElementById('pm-cancel').addEventListener('click', function () { Demo.closeDialog('price-modal'); });
+  Demo.submitWithSpinner(document.getElementById('price-form'), function (e, restore) {
+    var t = D.ROOM_TYPES[editingType];
+    // In-session only — no persistence in the prototype, but the whole table
+    // re-prices immediately so the owner can see what "standard price" governs.
+    t.defaultRent = Number(document.getElementById('pm-rent').value);
+    t.defaultNightly = Number(document.getElementById('pm-nightly').value);
+    restore();
+    Demo.closeDialog('price-modal');
+    renderPriceCards();
+    renderRooms();
+    banner('อัปเดตราคามาตรฐาน ' + t.label + ' แล้ว — มีผลกับสัญญา/การจองใหม่เท่านั้น');
+  }, 500);
+
+  /* ---- Per-room modal ---- */
+  var editingRoom = null;
+  document.getElementById('room-rows').addEventListener('click', function (e) {
+    var tr = e.target.closest('tr[data-room]');
+    if (!tr) return;
+    editingRoom = D.room(tr.dataset.room);
+    document.getElementById('rm-room').textContent = editingRoom.number;
+    document.getElementById('rm-type').value = editingRoom.roomType;
+    document.getElementById('rm-rental').value = editingRoom.rentalType;
+    document.getElementById('rm-rent').value = editingRoom.rentOverride != null ? editingRoom.rentOverride : '';
+    document.getElementById('rm-nightly').value = editingRoom.nightlyOverride != null ? editingRoom.nightlyOverride : '';
+    document.getElementById('rm-type-hint').textContent = editingRoom.occupant
+      ? 'ห้องนี้มีผู้เช่าอยู่ — ราคาในสัญญาปัจจุบันจะไม่เปลี่ยนตาม'
+      : 'กำหนดว่าห้องนี้ใช้ราคามาตรฐานของประเภทใด';
+    Demo.openDialog('room-modal', tr);
+  });
+  document.getElementById('rm-cancel').addEventListener('click', function () { Demo.closeDialog('room-modal'); });
+
+  var shiftHeld = false;
+  var roomForm = document.getElementById('room-form');
+  roomForm.querySelector('[data-primary]').addEventListener('click', function (e) { shiftHeld = e.shiftKey; }, true);
+
+  Demo.submitWithSpinner(roomForm, function (e, restore) {
+    restore();
+    var rentalChanged = document.getElementById('rm-rental').value !== editingRoom.rentalType;
+    // A rental-type change on an occupied room is the 409 the backend raises (S25).
+    if (shiftHeld || (rentalChanged && editingRoom.state !== 'vacant')) {
+      Demo.closeDialog('room-modal');
+      document.getElementById('conflict-room').textContent = editingRoom.number;
+      Demo.openDialog('conflict-dialog', roomForm.querySelector('[data-primary]'));
+      return;
+    }
+    editingRoom.roomType = document.getElementById('rm-type').value;
+    editingRoom.rentalType = document.getElementById('rm-rental').value;
+    var rentVal = document.getElementById('rm-rent').value;
+    var nightlyVal = document.getElementById('rm-nightly').value;
+    editingRoom.rentOverride = rentVal === '' ? null : Number(rentVal);
+    editingRoom.nightlyOverride = nightlyVal === '' ? null : Number(nightlyVal);
+    Demo.closeDialog('room-modal');
+    renderPriceCards();
+    renderRooms();
+    banner('บันทึกการตั้งค่าห้อง ' + editingRoom.number + ' แล้ว');
+  }, 500);
+
+  document.getElementById('ack-btn').addEventListener('click', function () { Demo.closeDialog('conflict-dialog'); });
+
+  // Success feedback without a page reload — this screen edits in place.
+  function banner(msg) {
+    var pc = document.getElementById('page-content');
+    var old = pc.querySelector('.success-banner');
+    if (old) old.remove();
+    var el = document.createElement('div');
+    el.className = 'success-banner';
+    el.textContent = '✓ ' + msg;
+    pc.insertBefore(el, pc.firstChild);
+  }
+
+  if (window.AmanewRole && window.AmanewRole.current() !== 'admin') {
+    document.getElementById('no-access-card').style.display = 'block';
+  }
+</script>
+</body>
+</html>

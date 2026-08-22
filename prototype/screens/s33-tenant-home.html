@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S33 · หน้าหลักผู้เช่า — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .greet-card { display: flex; flex-direction: column; gap: 4px; }
+  .greet-card .g-name { font-size: 17px; font-weight: 700; }
+  .greet-card .g-room { font-size: 13px; color: var(--text-muted); }
+  .quick-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .quick-row .btn { flex-direction: column; gap: 4px; font-size: 12px; padding: 12px 6px; min-height: 64px; }
+  .ic-line.paid-line { color: var(--success); }
+</style>
+</head>
+<body data-style="a">
+<div class="phone-stage">
+  <div class="phone-frame">
+    <div class="phone-header">
+      <span class="logo-dot" style="width:26px;height:26px;border-radius:8px;background:var(--primary);color:var(--primary-contrast);display:inline-flex;align-items:center;justify-content:center;font-weight:700;">A</span>
+      <span>อมาเนว์ เรสซิเดนซ์</span>
+      <div class="spacer" style="flex:1;"></div>
+      <span class="screen-id">S33 · หน้าหลัก</span>
+      <a class="btn btn-ghost btn-sm" href="s36-mobile-login.html" style="margin-left:8px;">ออก</a>
+    </div>
+    <div class="phone-body" id="phone-body">
+
+      <div class="card greet-card" id="greet-card"></div>
+
+      <!-- The tenant's own contract, in their own app: how many months they agreed
+           to, when it ends, and what leaving early costs — the same figures staff
+           see on S04, so nobody has to phone the office to ask. -->
+      <div class="card" id="contract-card"></div>
+
+      <div class="quick-row">
+        <button type="button" class="btn btn-secondary" id="qa-repair">🔧<span>แจ้งซ่อม</span></button>
+        <button type="button" class="btn btn-secondary" id="qa-clean">🧹<span>แจ้งทำความสะอาด</span></button>
+        <button type="button" class="btn btn-secondary" id="qa-moveout">📦<span>แจ้งย้ายออก</span></button>
+      </div>
+
+      <!-- Shown only inside the renewal window (S43's เตือนล่วงหน้าก่อนครบสัญญา).
+           Off-window it would invite a request staff can do nothing with. -->
+      <button type="button" class="btn btn-primary" id="qa-renew" style="width:100%; display:none;">📄 ขอต่อสัญญา</button>
+
+      <div class="invoice-card" id="invoice-card"></div>
+
+      <a class="btn btn-secondary" href="s38-tenant-notifications.html" style="width:100%; justify-content:center;">🔔 ตั้งค่าการแจ้งเตือน (LINE / ในแอป)</a>
+
+      <div class="demo-note">หน้านี้เป็นแอปแยกสำหรับผู้เช่า — ไม่ใช้เมนู/แถบด้านข้างของฝั่งพนักงาน</div>
+    </div>
+  </div>
+</div>
+
+<!-- Tenant request form — the sending end of the office inbox (S42) -->
+<div class="modal-overlay" id="req-modal" aria-hidden="true">
+  <div class="modal-box">
+    <h2 id="req-title"></h2>
+    <div id="req-form">
+      <div class="field full">
+        <label>รายละเอียด <span class="req">*</span></label>
+        <textarea id="req-detail" rows="3"></textarea>
+        <div class="error" id="req-error" style="display:none;">กรุณากรอกรายละเอียด</div>
+      </div>
+      <div class="demo-note" id="req-note" style="margin-top:10px;"></div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-secondary" id="req-cancel">ยกเลิก</button>
+        <button type="button" class="btn btn-primary" id="req-send">ส่งเรื่อง</button>
+      </div>
+    </div>
+    <div id="req-sent" style="display:none;">
+      <div class="success-banner">✓ ส่งเรื่องถึงสำนักงานแล้ว</div>
+      <p class="muted" style="font-size:13px; margin-top:10px;">
+        เจ้าหน้าที่จะเห็นเรื่องนี้ในกล่องเรื่องแจ้งเข้าทันที และจะแจ้งกลับเมื่อมอบหมายงานแล้ว
+      </p>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-primary" onclick="Demo.closeDialog('req-modal')">ปิด</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="pay-modal" aria-hidden="true">
+  <div class="modal-box">
+    <span class="screen-id">แนบสลิปการโอนเงิน</span>
+    <h2>ส่งหลักฐานการชำระเงิน</h2>
+    <p class="muted" style="font-size:13px;">แนบสลิปโอนเงินหรือ QR พร้อมเพย์ เพื่อให้เจ้าของตรวจสอบ</p>
+    <div class="upload" style="border:1.5px dashed var(--border); border-radius:var(--radius); padding:20px; text-align:center; color:var(--text-muted); font-size:13px;" id="upload-box">แตะเพื่อแนบไฟล์สลิป (JPG, PNG, PDF)</div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="pay-cancel">ยกเลิก</button>
+      <button type="button" class="btn btn-primary" id="pay-confirm">ส่งสลิป</button>
+    </div>
+  </div>
+</div>
+
+<script src="../switcher.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script>
+  var D = window.AmanewData;
+  var th = D.tenantHome;
+  var inv = th.currentInvoice;
+  var STATUS_LABEL = { unpaid: ['ค้างชำระ', 'badge-danger'], pending_verification: ['รอตรวจสอบ', 'badge-warning'], paid: ['ชำระแล้ว', 'badge-success'] };
+
+  document.getElementById('greet-card').innerHTML =
+    '<span class="g-name">สวัสดี, ' + th.name + '</span>' +
+    '<span class="g-room">ห้อง ' + th.room + ' · ' + (th.rentalType === 'monthly' ? 'รายเดือน' : 'รายวัน') + '</span>';
+
+  // Contract panel — same source as the staff-side S04 panel (D.contractOf).
+  var myRoom = D.room(th.room);
+  var c = D.contractOf(myRoom);
+  var myDeposit = myRoom && myRoom.deposit != null ? myRoom.deposit : th.deposit;
+  document.getElementById('contract-card').innerHTML = c
+    ? '<div class="cp-head" style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">' +
+        '<span class="section-title" style="margin:0;">สัญญาเช่าของฉัน</span>' +
+        '<span style="font-weight:700;">' + c.months + ' เดือน</span>' +
+        (c.expired
+          ? '<span class="status-badge badge-danger">ครบกำหนดแล้ว</span>'
+          : c.expiringSoon
+            ? '<span class="status-badge badge-warning">เหลือ ' + c.daysLeft + ' วัน</span>'
+            : '<span class="status-badge badge-success">เหลือ ' + c.monthsLeft + ' เดือน</span>') +
+      '</div>' +
+      '<div style="font-family:var(--font-mono); font-size:13px; color:var(--text-muted); margin-top:6px;">' +
+        c.startLabel + ' → ' + c.endLabel + '</div>' +
+      '<div class="cp-bar" style="height:6px; border-radius:999px; background:var(--surface); border:1px solid var(--border); overflow:hidden; margin-top:8px;">' +
+        '<span style="display:block; height:100%; background:var(--info); width:' + c.percentElapsed + '%;"></span></div>' +
+      '<div style="display:flex; justify-content:space-between; margin-top:10px; font-size:13px;">' +
+        '<span class="muted">ค่าเช่า/เดือน</span><span class="money">' + D.money(myRoom.rent || D.rentFor(myRoom)) + '</span></div>' +
+      '<div style="display:flex; justify-content:space-between; margin-top:4px; font-size:13px;">' +
+        '<span class="muted">เงินประกันที่วางไว้</span><span class="money">' + D.money(myDeposit) + '</span></div>' +
+      '<div class="demo-note" style="margin-top:10px;">' +
+        (c.expiringSoon || c.expired
+          ? 'สัญญาใกล้ครบแล้ว — กดปุ่ม "ขอต่อสัญญา" ด้านล่างได้เลย (ต่อสัญญา = ทำสัญญาใหม่ เงินประกันเดิมยกยอดไป)'
+          : 'ย้ายออกก่อน ' + c.endLabel + ' ถือว่าผิดสัญญา จะถูกริบเงินประกัน ' + D.money(myDeposit)) +
+      '</div>'
+    : '<span class="muted" style="font-size:13px;">ไม่มีข้อมูลสัญญา</span>';
+
+  function renderInvoice() {
+    var s = STATUS_LABEL[inv.status];
+    document.getElementById('invoice-card').innerHTML =
+      '<div class="ic-head"><h3>ใบแจ้งหนี้ #' + inv.number + '</h3><span class="status-badge ' + s[1] + '">' + s[0] + '</span></div>' +
+      '<a href="s34-tenant-bill.html" style="font-size:12px;">ดูรายละเอียด/ประวัติบิล →</a>' +
+      '<div class="ic-line"><span class="ic-desc">ค่าเช่าห้อง</span><span class="ic-amt">' + D.money(inv.roomCharge) + '</span></div>' +
+      '<div class="ic-line"><span class="ic-desc">ค่าน้ำ-ไฟ</span><span class="ic-amt">' + D.money(inv.utilitySubtotal) + '</span></div>' +
+      (inv.lateFeeFrozen ? '<div class="ic-line ic-late"><span class="ic-desc">ค่าปรับล่าช้า</span><span class="ic-amt">' + D.money(inv.lateFeeFrozen) + '</span></div>' : '') +
+      '<div class="ic-total"><span>รวมทั้งสิ้น</span><span>' + D.money(inv.total) + '</span></div>' +
+      '<p class="muted" style="font-size:12px; margin:6px 0 12px;">ครบกำหนด ' + inv.dueDate + '</p>' +
+      (inv.status === 'unpaid'
+        ? '<button type="button" class="btn btn-primary" id="btn-pay" style="width:100%;">ชำระเงิน</button>'
+        : '<button type="button" class="btn btn-secondary" style="width:100%;" disabled>' + s[0] + '</button>');
+    if (inv.status === 'unpaid') {
+      document.getElementById('btn-pay').addEventListener('click', function (e) { Demo.openDialog('pay-modal', e.currentTarget); });
+    }
+  }
+  renderInvoice();
+
+  document.getElementById('upload-box').addEventListener('click', function () {
+    this.textContent = '✓ slip_' + inv.number + '.jpg แนบแล้ว';
+    this.style.borderStyle = 'solid';
+    this.style.color = 'var(--success)';
+  });
+  document.getElementById('pay-cancel').addEventListener('click', function () { Demo.closeDialog('pay-modal'); });
+  document.getElementById('pay-confirm').addEventListener('click', function () {
+    inv.status = 'pending_verification';
+    Demo.closeDialog('pay-modal');
+    renderInvoice();
+  });
+
+  var REQ_META = {
+    'qa-repair': { type: 'repair', title: 'แจ้งซ่อม', ph: 'เช่น ก๊อกน้ำในห้องน้ำปิดไม่สนิท น้ำหยดตลอดคืน', note: 'ช่างจะติดต่อนัดเวลาเข้าห้อง' },
+    'qa-clean': { type: 'cleaning', title: 'แจ้งทำความสะอาด', ph: 'เช่น ขอทำความสะอาดห้องวันเสาร์นี้', note: 'ทำความสะอาดตามคำขอมีค่าบริการ ฿200/ครั้ง จะรวมในบิลรอบถัดไป' },
+    'qa-moveout': { type: 'moveout', title: 'แจ้งย้ายออก', ph: 'เช่น ขอย้ายออกสิ้นเดือนสิงหาคม', note: 'แจ้งล่วงหน้าก่อนย้ายออก — เจ้าหน้าที่จะติดต่อกลับเรื่องนัดตรวจห้องและคืนเงินประกัน' },
+    'qa-renew': { type: 'renewal', title: 'ขอต่อสัญญา', ph: 'เช่น ขอต่ออีก 12 เดือน อยู่ห้องเดิม',
+      note: 'ต่อสัญญา = ทำสัญญาใหม่ เงินประกันเดิมยกยอดไปไม่ต้องวางใหม่ · เจ้าหน้าที่จะติดต่อกลับเพื่อตกลงจำนวนเดือนและค่าเช่าของสัญญาใหม่' }
+  };
+  var reqKind = null;
+
+  // Arriving from registration (S46) or any other flow that carries ?banner= —
+  // the confirmation belongs on the destination, not as a silent redirect.
+  (function arrivalBanner() {
+    var msg = new URLSearchParams(location.search).get('banner');
+    if (!msg) return;
+    var b = document.createElement('div');
+    b.className = 'success-banner';
+    b.textContent = '✓ ' + decodeURIComponent(msg);
+    var body = document.getElementById('phone-body');
+    body.insertBefore(b, body.firstChild);
+  })();
+
+  // Only offer renewal once the contract is actually inside the window S43 defines.
+  if (c && (c.expiringSoon || c.expired)) {
+    document.getElementById('qa-renew').style.display = '';
+  }
+
+  ['qa-repair', 'qa-clean', 'qa-moveout', 'qa-renew'].forEach(function (id) {
+    document.getElementById(id).addEventListener('click', function (e) {
+      reqKind = REQ_META[id];
+      document.getElementById('req-title').textContent = reqKind.title;
+      document.getElementById('req-detail').value = '';
+      document.getElementById('req-detail').placeholder = reqKind.ph;
+      document.getElementById('req-note').textContent = reqKind.note;
+      document.getElementById('req-error').style.display = 'none';
+      document.getElementById('req-sent').style.display = 'none';
+      document.getElementById('req-form').style.display = '';
+      Demo.openDialog('req-modal', e.currentTarget);
+    });
+  });
+  document.getElementById('req-cancel').addEventListener('click', function () { Demo.closeDialog('req-modal'); });
+  document.getElementById('req-send').addEventListener('click', function () {
+    var detail = document.getElementById('req-detail').value.trim();
+    if (!detail) { document.getElementById('req-error').style.display = 'block'; return; }
+    // Goes onto the office's inbox (S42) as a "reported" item, where staff assign it.
+    D.requests.unshift({
+      id: 'R-' + (200 + D.requests.length), room: th.room, type: reqKind.type,
+      from: th.name, fromRole: 'tenant', detail: detail,
+      at: D.thaiDate(D.TODAY) + ' ' + new Date().toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }),
+      waitH: 0, status: 'reported'
+    });
+    document.getElementById('req-form').style.display = 'none';
+    document.getElementById('req-sent').style.display = '';
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S46 · สมัครใช้งาน — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .reg-steps { display: flex; gap: 6px; margin-bottom: 18px; }
+  .reg-steps span { flex: 1; height: 4px; border-radius: 99px; background: var(--border); }
+  .reg-steps span.on { background: var(--primary); }
+  .reg-step { display: none; }
+  .reg-step.on { display: block; }
+  .otp-row { display: flex; gap: 8px; justify-content: space-between; margin-top: 12px; }
+  .otp-row input { width: 100%; height: 52px; text-align: center; font-size: 22px; font-weight: 700;
+    font-family: var(--font-mono); border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--card-bg); color: var(--text); }
+  .otp-row input:focus { outline: 2px solid var(--primary); border-color: transparent; }
+  .found-card { background: var(--success-soft); border: 1px solid var(--success); border-radius: var(--radius);
+    padding: 12px 14px; margin-top: 14px; }
+  .found-card .fc-name { font-weight: 700; font-size: 15px; }
+  .pw-hint { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
+  .pw-bad { color: var(--danger); }
+</style>
+</head>
+<body data-style="a">
+<div class="phone-stage">
+  <div class="phone-frame">
+    <div class="phone-header">
+      <a class="btn btn-ghost btn-sm" href="s36-mobile-login.html">←</a>
+      <span>สมัครใช้งาน</span>
+      <div class="spacer" style="flex:1;"></div>
+      <span class="screen-id">S46 · สมัครผู้เช่า</span>
+    </div>
+    <div class="phone-body">
+
+      <div class="reg-steps"><span class="on" id="dot1"></span><span id="dot2"></span><span id="dot3"></span></div>
+
+      <!-- Step 1 — phone. Registration CLAIMS an existing tenancy; it never
+           creates one. A number that isn't on a room is sent to the office. -->
+      <div class="reg-step on" id="step1">
+        <div class="card">
+          <h3 style="font-size:15px; margin:0;">กรอกเบอร์โทรของคุณ</h3>
+          <p class="muted" style="font-size:13px; margin:6px 0 0;">
+            ใช้เบอร์เดียวกับที่ให้ไว้ตอนทำสัญญา — ระบบจะหาห้องของคุณจากเบอร์นี้
+          </p>
+          <div class="field full" style="margin-top:14px;">
+            <label>เบอร์โทรศัพท์ <span class="req">*</span></label>
+            <input type="tel" id="phone" inputmode="numeric" placeholder="08X-XXX-XXXX" autocomplete="tel">
+          </div>
+          <div class="error" id="err1" style="display:none;"></div>
+          <div id="found-slot"></div>
+          <button type="button" class="btn btn-primary" id="btn-next1" style="width:100%; min-height:52px; margin-top:14px;">ถัดไป</button>
+          <p class="muted" style="font-size:12px; margin-top:12px;">
+            มีบัญชีอยู่แล้ว? <a href="s36-mobile-login.html">เข้าสู่ระบบ</a>
+          </p>
+        </div>
+        <div class="demo-note">
+          โหมดสาธิต: <strong>081-234-5678</strong> (คุณสมชาย ห้อง 105 — สมัครแล้วเข้าแอปได้เลย) ·
+          <strong>084-410-8770</strong> (สมัครไว้แล้ว) · <strong>099-999-9999</strong> (ไม่มีในระบบ)
+        </div>
+      </div>
+
+      <!-- Step 2 — OTP. Without it, anyone who knows a tenant's number could
+           claim their room and see their bills. -->
+      <div class="reg-step" id="step2">
+        <div class="card">
+          <h3 style="font-size:15px; margin:0;">ยืนยันเบอร์โทร</h3>
+          <p class="muted" style="font-size:13px; margin:6px 0 0;">
+            ส่งรหัส 6 หลักไปที่ <strong id="otp-phone"></strong> แล้ว
+          </p>
+          <div class="otp-row">
+            <input maxlength="1" inputmode="numeric" data-otp><input maxlength="1" inputmode="numeric" data-otp>
+            <input maxlength="1" inputmode="numeric" data-otp><input maxlength="1" inputmode="numeric" data-otp>
+            <input maxlength="1" inputmode="numeric" data-otp><input maxlength="1" inputmode="numeric" data-otp>
+          </div>
+          <div class="error" id="err2" style="display:none;">รหัสไม่ถูกต้อง — ลองใหม่อีกครั้ง</div>
+          <button type="button" class="btn btn-primary" id="btn-next2" style="width:100%; min-height:52px; margin-top:16px;">ยืนยันรหัส</button>
+          <button type="button" class="btn btn-ghost" id="btn-resend" style="width:100%; min-height:44px; margin-top:8px;">ส่งรหัสใหม่</button>
+        </div>
+        <div class="demo-note">โหมดสาธิต: รหัสคือ <strong>123456</strong> (กดปุ่ม "ส่งรหัสใหม่" เพื่อเติมให้อัตโนมัติ)</div>
+      </div>
+
+      <!-- Step 3 — password. No email anywhere: phone is the identifier, and a
+           forgotten password is reset by the office (Master Doc §, Phase 1). -->
+      <div class="reg-step" id="step3">
+        <div class="card">
+          <h3 style="font-size:15px; margin:0;">ตั้งรหัสผ่าน</h3>
+          <p class="muted" style="font-size:13px; margin:6px 0 0;">ใช้เข้าแอปครั้งต่อไปด้วยเบอร์โทร + รหัสผ่านนี้</p>
+          <div class="field full" style="margin-top:14px;">
+            <label>รหัสผ่าน <span class="req">*</span></label>
+            <input type="password" id="pw1" autocomplete="new-password">
+            <div class="pw-hint" id="pw-hint">อย่างน้อย 6 ตัวอักษร</div>
+          </div>
+          <div class="field full">
+            <label>ยืนยันรหัสผ่าน <span class="req">*</span></label>
+            <input type="password" id="pw2" autocomplete="new-password">
+          </div>
+          <div class="error" id="err3" style="display:none;"></div>
+          <button type="button" class="btn btn-primary" id="btn-done" style="width:100%; min-height:52px; margin-top:8px;">สมัครและเข้าใช้งาน</button>
+        </div>
+        <div class="demo-note">
+          ไม่มีช่องอีเมลทั้งระบบ — เบอร์โทรคือชื่อผู้ใช้ ถ้าลืมรหัสผ่านให้ติดต่อสำนักงานเพื่อรีเซ็ตให้
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="../switcher.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script>
+  var D = window.AmanewData;
+  var DEMO_OTP = '123456';
+  var claimed = null; // the tenancy this phone matched in step 1
+
+  function showStep(n) {
+    [1, 2, 3].forEach(function (i) {
+      document.getElementById('step' + i).classList.toggle('on', i === n);
+      document.getElementById('dot' + i).classList.toggle('on', i <= n);
+    });
+  }
+
+  /* ---- Step 1: does this phone have a room? ---- */
+  document.getElementById('btn-next1').addEventListener('click', function () {
+    var res = D.registrationCheck(document.getElementById('phone').value);
+    var err = document.getElementById('err1');
+    var slot = document.getElementById('found-slot');
+    slot.innerHTML = '';
+    if (!res.ok) {
+      err.style.display = 'block';
+      err.innerHTML = res.message +
+        (res.reason === 'already' ? ' <a href="s36-mobile-login.html">ไปหน้าเข้าสู่ระบบ</a>' : '');
+      return;
+    }
+    err.style.display = 'none';
+    claimed = res;
+    // Show whose room was matched before sending a code — a wrong number should
+    // be caught here, not after the tenant has set a password on someone's room.
+    slot.innerHTML = '<div class="found-card">' +
+      '<div class="fc-name">' + res.name + '</div>' +
+      '<div style="font-size:13px;">ห้อง ' + res.room + ' · ' + (res.rentalType === 'monthly' ? 'รายเดือน' : 'รายวัน') + '</div>' +
+      '<div class="muted" style="font-size:12px; margin-top:4px;">ถ้าไม่ใช่คุณ กรุณาติดต่อสำนักงาน</div>' +
+      '</div>';
+    document.getElementById('otp-phone').textContent = document.getElementById('phone').value;
+    setTimeout(function () { showStep(2); }, 700);
+  });
+
+  /* ---- Step 2: OTP ---- */
+  var boxes = [].slice.call(document.querySelectorAll('[data-otp]'));
+  boxes.forEach(function (b, i) {
+    b.addEventListener('input', function () {
+      b.value = b.value.replace(/\D/g, '');
+      if (b.value && boxes[i + 1]) boxes[i + 1].focus();
+    });
+    b.addEventListener('keydown', function (e) {
+      if (e.key === 'Backspace' && !b.value && boxes[i - 1]) boxes[i - 1].focus();
+    });
+  });
+  document.getElementById('btn-resend').addEventListener('click', function () {
+    DEMO_OTP.split('').forEach(function (c, i) { boxes[i].value = c; });
+    document.getElementById('err2').style.display = 'none';
+  });
+  document.getElementById('btn-next2').addEventListener('click', function () {
+    var code = boxes.map(function (b) { return b.value; }).join('');
+    if (code !== DEMO_OTP) { document.getElementById('err2').style.display = 'block'; return; }
+    document.getElementById('err2').style.display = 'none';
+    showStep(3);
+  });
+
+  /* ---- Step 3: password ---- */
+  document.getElementById('btn-done').addEventListener('click', function () {
+    var a = document.getElementById('pw1').value, b = document.getElementById('pw2').value;
+    var err = document.getElementById('err3');
+    if (a.length < 6) { err.style.display = 'block'; err.textContent = 'รหัสผ่านต้องยาวอย่างน้อย 6 ตัวอักษร'; return; }
+    if (a !== b) { err.style.display = 'block'; err.textContent = 'รหัสผ่านสองช่องไม่ตรงกัน'; return; }
+    err.style.display = 'none';
+    D.completeRegistration(document.getElementById('phone').value);
+    location.href = 's33-tenant-home.html?banner=' +
+      encodeURIComponent('สมัครสำเร็จ — ยินดีต้อนรับ ห้อง ' + claimed.room);
+  });
+</script>
+</body>
+</html>

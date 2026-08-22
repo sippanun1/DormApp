@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S44 · ทะเบียนผู้เช่า — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+<style>
+  .dir-search { position: relative; max-width: 420px; }
+  .dir-search input { width: 100%; padding: 10px 14px 10px 34px; font-size: 14px;
+    border: 1px solid var(--border); border-radius: 999px; background: var(--card-bg); color: var(--text); font-family: inherit; }
+  .dir-search input:focus { outline: 2px solid var(--primary); border-color: transparent; }
+  .dir-search .ds-ic { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); font-size: 13px; color: var(--text-muted); }
+  .dir-name { font-weight: 600; }
+  .dir-note { font-size: 12px; color: var(--text-muted); }
+  tr.is-past td { opacity: .72; }
+</style>
+</head>
+<body data-style="a" data-screen="S44" data-title="ทะเบียนผู้เช่า">
+<div class="page-content" id="page-content">
+
+  <div class="card">
+    <div class="page-header-row">
+      <div>
+        <h3 style="margin:0;">ทะเบียนผู้เช่า</h3>
+        <p class="muted" style="font-size:12px; margin-top:4px;">
+          ผู้เช่าปัจจุบันและผู้เช่าเก่าทั้งหมด — ค้นด้วยชื่อ เบอร์โทร หรือเลขห้อง
+        </p>
+      </div>
+      <div class="spacer"></div>
+      <div class="kpi-tile" style="min-width:120px;"><div class="kpi-num" id="k-current"></div><div class="kpi-label">กำลังอยู่</div></div>
+      <div class="kpi-tile kpi-danger" style="min-width:120px;"><div class="kpi-num" id="k-flag"></div><div class="kpi-label">มีประวัติ</div></div>
+    </div>
+
+    <!-- A search box that says what it searches and filters the list in front of
+         you — the thing the old topbar box was mistaken for. -->
+    <div class="dir-search" style="margin-top:14px;">
+      <span class="ds-ic">🔍</span>
+      <input type="search" id="q" placeholder="ค้นหา ชื่อ / เบอร์โทร / เลขห้อง" autocomplete="off">
+    </div>
+
+    <div class="settings-filters" style="margin-top:14px;">
+      <div class="sf-group">
+        <span class="sf-label">สถานะ</span>
+        <div class="floor-jump" id="f-status">
+          <button type="button" data-v="all" class="active">ทั้งหมด</button>
+          <button type="button" data-v="current">กำลังอยู่</button>
+          <button type="button" data-v="reserved">จองไว้</button>
+          <button type="button" data-v="past">เคยอยู่</button>
+          <button type="button" data-v="flag">มีประวัติ</button>
+        </div>
+      </div>
+      <div class="sf-group">
+        <span class="sf-label">รูปแบบ</span>
+        <div class="floor-jump" id="f-rental">
+          <button type="button" data-v="all" class="active">ทั้งหมด</button>
+          <button type="button" data-v="monthly">รายเดือน</button>
+          <button type="button" data-v="daily">รายวัน</button>
+        </div>
+      </div>
+    </div>
+
+    <table class="data-table" style="margin-top:14px;">
+      <thead><tr>
+        <th style="width:80px;">ห้อง</th>
+        <th>ชื่อ</th>
+        <th style="width:140px;">เบอร์โทร</th>
+        <th style="width:110px;">รูปแบบ</th>
+        <th style="width:190px;">ช่วงที่อยู่</th>
+        <th class="td-money" style="width:120px;">เงินประกัน</th>
+        <th style="width:150px;">สถานะ</th>
+      </tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="muted" style="font-size:12px; margin-top:10px;" id="summary"></div>
+
+    <div class="rule-note" style="margin-top:14px;">
+      ผู้เช่าเก่าไม่มียอดค้างในระบบ — เงินประกันหักได้ไม่เกินที่วางไว้ ส่วนเกินไม่เก็บ (ไม่มีการตามหนี้)
+      สิ่งที่บันทึกไว้คือ<strong>ประวัติ</strong> เช่น หนีค่าเช่า / ไม่ให้เช่าอีก เพื่อให้เห็นตอนคนเดิมกลับมาเช่าใหม่
+    </div>
+  </div>
+
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var qsAmp = qs.replace(/^\?/, '&');
+  var ALL = D.directory();
+  var filters = { status: 'all', rental: 'all', q: '' };
+
+  var STATUS = {
+    current:  { label: 'กำลังอยู่', badge: 'badge-success' },
+    reserved: { label: 'จองไว้', badge: 'badge-warning' },
+    past:     { label: 'เคยอยู่', badge: 'badge-neutral' }
+  };
+
+  function digits(s) { return String(s || '').replace(/\D/g, ''); }
+
+  function visible() {
+    var q = filters.q.trim();
+    var qd = digits(q);
+    return ALL.filter(function (t) {
+      var okStatus = filters.status === 'all' ||
+        (filters.status === 'flag' ? !!t.flag : t.status === filters.status);
+      var okRental = filters.rental === 'all' || t.rental === filters.rental;
+      // Phone matches loosely so 081234 finds 081-234-5678, same rule as S05.
+      var okQ = !q || t.name.indexOf(q) !== -1 || t.room.indexOf(q) !== -1 ||
+        (qd && digits(t.phone).indexOf(qd) !== -1);
+      return okStatus && okRental && okQ;
+    });
+  }
+
+  function render() {
+    var list = visible();
+    document.getElementById('k-current').textContent = ALL.filter(function (t) { return t.status === 'current'; }).length;
+    document.getElementById('k-flag').textContent = ALL.filter(function (t) { return t.flag; }).length;
+
+    document.getElementById('rows').innerHTML = list.length ? list.map(function (t) {
+      var st = STATUS[t.status];
+      var flag = t.flag ? D.TENANT_FLAGS[t.flag] : null;
+      // Only a current tenant has a room to open — a past tenant's old room now
+      // belongs to someone else, so linking there would be misleading.
+      var roomCell = t.status === 'past' ? '<span class="td-muted">' + t.room + '</span>'
+        : '<a href="s04-room-detail.html?room=' + t.room + qsAmp + '">' + t.room + '</a>';
+      return '<tr class="' + (t.status === 'past' ? 'is-past' : '') + '">' +
+        '<td class="num">' + roomCell + '</td>' +
+        '<td><div class="dir-name">' + t.name + '</div><div class="dir-note">' + t.note + '</div></td>' +
+        '<td class="num td-muted">' + t.phone + '</td>' +
+        '<td>' + (t.rental === 'monthly' ? 'รายเดือน' : 'รายวัน') + '</td>' +
+        '<td class="td-muted" style="font-size:12px;">' + t.from + ' → ' + t.to +
+          (t.months ? ' <span class="muted">(' + t.months + ' เดือน)</span>'
+            : t.nights ? ' <span class="muted">(' + t.nights + ' คืน)</span>' : '') + '</td>' +
+        '<td class="td-money">' + (t.deposit != null ? D.money(t.deposit) : '—') + '</td>' +
+        '<td><span class="status-badge ' + st.badge + '">' + st.label + '</span>' +
+          (flag ? ' <span class="status-badge ' + flag.badge + '">' + flag.label + '</span>' : '') + '</td>' +
+      '</tr>';
+    }).join('') : '<tr><td colspan="7" class="td-muted" style="text-align:center; padding:24px;">ไม่พบผู้เช่าที่ตรงกับที่ค้น</td></tr>';
+
+    document.getElementById('summary').textContent =
+      'แสดง ' + list.length + ' จากทั้งหมด ' + ALL.length + ' คน';
+  }
+
+  function bindFilter(id, key) {
+    document.getElementById(id).addEventListener('click', function (e) {
+      var btn = e.target.closest('button[data-v]');
+      if (!btn) return;
+      document.querySelectorAll('#' + id + ' button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+      filters[key] = btn.dataset.v;
+      render();
+    });
+  }
+  bindFilter('f-status', 'status');
+  bindFilter('f-rental', 'rental');
+  document.getElementById('q').addEventListener('input', function () { filters.q = this.value; render(); });
+
+  render();
+</script>
+</body>
+</html>

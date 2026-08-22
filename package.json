@@ -1,0 +1,28 @@
+{
+  "name": "amanew",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Amanew Smart Management System — monorepo (Next.js web + Express API)",
+  "workspaces": [
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "playwright-core": "^1.62.1"
+  },
+  "scripts": {
+    "dev": "concurrently -n api,web -c blue,green \"npm:dev:api\" \"npm:dev:web\"",
+    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspace=apps/api && npm run build --workspace=apps/web",
+    "start": "npm run start --workspace=apps/api",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "db:pull": "npm run db:pull --workspace=apps/api",
+    "db:migrate": "psql \"$DIRECT_URL\" -v ON_ERROR_STOP=1 -f db/migrations/001_initial_schema.sql -f db/migrations/002_scope_delta.sql",
+    "db:test": "psql \"$DIRECT_URL\" -f db/tests/constraint_tests.sql",
+    "seed": "npm run seed --workspace=apps/api"
+  }
+}

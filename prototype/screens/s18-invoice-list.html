@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S18 · รายการบิล — อมาเนว์</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;600;700&family=Prompt:wght@400;600;700&family=Sarabun:wght@400;500;600&family=Noto+Sans+Thai:wght@400;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="../components.css">
+<link rel="stylesheet" href="shared.css">
+</head>
+<body data-style="a" data-screen="S18" data-title="รายการบิล">
+<div class="page-content" id="page-content">
+
+  <div class="page-header-row">
+    <div class="filter-bar" id="filter-bar">
+      <button class="chip active" data-tab="all">ทั้งหมด</button>
+      <button class="chip" data-tab="unpaid">ค้างชำระ</button>
+      <button class="chip" data-tab="pending_verification">รอตรวจสอบ</button>
+      <button class="chip" data-tab="paid">ชำระแล้ว</button>
+      <button class="chip" data-tab="rejected">ถูกปฏิเสธ</button>
+    </div>
+    <div class="spacer"></div>
+    <label class="mb-est" style="font-size:13px; margin-right:6px;"><input type="checkbox" id="show-deleted"> แสดงบิลที่ลบแล้ว</label>
+    <a class="btn btn-secondary" href="s16-invoice-confirmation.html">+ ออกบิลห้องเดียว</a>
+    <a class="btn btn-primary" href="s17-batch-summary.html">สร้างบิลประจำเดือน (ทั้งหมด)</a>
+  </div>
+
+  <div class="card" style="padding:0;">
+    <table class="data-table">
+      <thead>
+        <tr><th>เลขที่</th><th>ห้อง</th><th>ผู้เช่า</th><th>ยอดรวม</th><th>ครบกำหนด</th><th>สถานะ</th><th style="width:150px;"></th></tr>
+      </thead>
+      <tbody id="invoice-rows"></tbody>
+    </table>
+  </div>
+
+  <div class="rule-note" style="margin-top:12px;">
+    ลบบิลได้เฉพาะเจ้าของ และเฉพาะบิลที่ยัง<b>ไม่ได้ชำระ</b>หรือ<b>ถูกปฏิเสธ</b> — บิลที่ชำระแล้วออกใบเสร็จให้ผู้เช่าไปแล้ว จึงลบไม่ได้เลย (กฎ 13.4 · ใบเสร็จเป็นเอกสารถาวร)
+  </div>
+
+</div>
+
+<!-- Delete (owner only, reason required, never silent) -->
+<div class="modal-overlay" id="delete-modal" aria-hidden="true">
+  <div class="modal-box">
+    <h2>ลบบิล</h2>
+    <div class="dialog-what" id="del-what"></div>
+    <div class="field full">
+      <label>เหตุผลที่ลบ <span class="req">*</span></label>
+      <input type="text" id="del-reason" placeholder="เช่น ออกบิลซ้ำ, ออกผิดห้อง, คิดค่าน้ำผิด">
+      <div class="error" id="del-error" style="display:none;">กรุณาระบุเหตุผล</div>
+    </div>
+    <div class="rule-note">
+      บิลจะยังอยู่ในรายการแบบขีดฆ่า พร้อมชื่อผู้ลบและเหตุผล และถูกบันทึกในประวัติการใช้งาน (S45) — ผู้เช่าจะไม่เห็นบิลนี้ในแอปอีก
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary" id="del-cancel">ยกเลิก</button>
+      <button type="button" class="btn btn-danger" id="del-confirm">ยืนยันลบ</button>
+    </div>
+  </div>
+</div>
+
+<script src="../switcher.js"></script>
+<script src="role.js"></script>
+<script src="data.js"></script>
+<script src="demo.js"></script>
+<script src="nav.js"></script>
+<script>
+  var D = window.AmanewData;
+  var qs = location.search;
+  var qsAmp = qs.replace(/^\?/, '&');
+
+  var STATUS_LABEL = {
+    unpaid: ['ค้างชำระ', 'badge-danger'],
+    pending_verification: ['รอตรวจสอบ', 'badge-warning'],
+    paid: ['ชำระแล้ว', 'badge-success'],
+    rejected: ['ถูกปฏิเสธ', 'badge-neutral']
+  };
+
+  var role = window.AmanewRole ? window.AmanewRole.current() : 'admin';
+  var currentFilter = 'all';
+  var showDeleted = false;
+  var deletingNumber = null;
+
+  function render(filter) {
+    if (filter) currentFilter = filter;
+    var rows = D.invoiceList.filter(function (i) {
+      return (showDeleted || !i.deleted) && (currentFilter === 'all' || i.status === currentFilter);
+    });
+    document.getElementById('invoice-rows').innerHTML = rows.map(function (i) {
+      var s = STATUS_LABEL[i.status];
+      var strike = i.deleted ? ' style="text-decoration:line-through;"' : '';
+      // The row navigates, so the delete button has to stop the click from
+      // reaching it — otherwise "ลบ" would open the bill instead.
+      // Nothing in the action column for a deleted row — the status badge already
+      // says ลบแล้ว, and repeating it reads as two different facts.
+      var action = i.deleted ? ''
+        : role !== 'admin' ? ''
+        : D.invoiceDeletable(i)
+          ? '<button type="button" class="btn btn-ghost btn-sm" data-del="' + i.number + '">ลบ</button>'
+          : '<span class="muted" style="font-size:11px;">' + D.invoiceDeleteBlockReason(i) + '</span>';
+      return '<tr' + (i.deleted ? ' style="opacity:.6;"' : '') + ' data-open="' + i.number + '">' +
+        '<td' + strike + '>#' + i.number + '</td><td' + strike + '>' + i.room + '</td>' +
+        '<td class="td-muted"' + strike + '>' + i.tenant +
+          (i.deleted ? '<div class="override-note">ลบโดย ' + i.deletedBy + ' ' + i.deletedAt + ' — ' + i.deletedReason + '</div>' : '') +
+        '</td>' +
+        '<td class="td-money"' + (i.deleted ? ' style="text-decoration:line-through; color:var(--text-muted);"' : '') + '>' + D.money(i.total) + '</td>' +
+        '<td class="td-muted"' + strike + '>' + i.dueDate + '</td>' +
+        '<td><span class="status-badge ' + (i.deleted ? 'badge-neutral' : s[1]) + '">' + (i.deleted ? 'ลบแล้ว' : s[0]) + '</span></td>' +
+        '<td>' + action + '</td></tr>';
+    }).join('');
+
+    document.querySelectorAll('[data-open]').forEach(function (tr) {
+      tr.addEventListener('click', function (e) {
+        if (e.target.closest('[data-del]')) return;
+        location.href = 's19-invoice-detail.html?invoice=' + tr.dataset.open + qsAmp;
+      });
+    });
+    document.querySelectorAll('[data-del]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        deletingNumber = Number(btn.dataset.del);
+        var i = D.findInvoice(deletingNumber);
+        document.getElementById('del-what').textContent =
+          'บิล #' + i.number + ' · ห้อง ' + i.room + ' · ' + i.tenant + ' · ' + D.money(i.total);
+        document.getElementById('del-reason').value = '';
+        document.getElementById('del-error').style.display = 'none';
+        Demo.openDialog('delete-modal', btn);
+      });
+    });
+  }
+
+  document.getElementById('show-deleted').addEventListener('change', function () {
+    showDeleted = this.checked;
+    render();
+  });
+
+  document.getElementById('del-cancel').addEventListener('click', function () { Demo.closeDialog('delete-modal'); });
+  document.getElementById('del-confirm').addEventListener('click', function () {
+    var reason = document.getElementById('del-reason').value.trim();
+    if (!reason) { document.getElementById('del-error').style.display = 'block'; return; }
+    var i = D.findInvoice(deletingNumber);
+    // Re-check the predicate here too: the modal must not be drivable around a
+    // status that changed while it was open.
+    if (!D.invoiceDeletable(i)) { Demo.closeDialog('delete-modal'); return; }
+    i.deleted = true; i.deletedBy = 'เจ้าของ'; i.deletedAt = D.thaiDate(D.TODAY); i.deletedReason = reason;
+    D.auditLog.unshift({
+      id: 'L-' + (D.auditLog.length + 30), at: D.thaiDate(D.TODAY) + ' ' + '16:00',
+      by: 'เจ้าของ', kind: 'invoice_edit', target: 'บิล #' + i.number + ' ห้อง ' + i.room,
+      detail: 'ลบบิล — เหตุผล: ' + reason
+    });
+    Demo.closeDialog('delete-modal');
+    render();
+  });
+
+  render('all');
+  Demo.bindTabs(document.getElementById('filter-bar'), render);
+</script>
+</body>
+</html>
